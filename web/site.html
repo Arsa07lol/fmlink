@@ -1,0 +1,720 @@
+<title>FM Multi-Mod Link</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Data digital ASK, FSK, dan DBPSK dikirim lewat kanal radio FM dengan Arduino Uno, lalu di-decode lagi di laptop dan di browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: an instrument rack. Each section is a module along the signal path, data to decoder.
+   Single dark look on purpose (an oscilloscope screen); every colour is set explicitly. */
+:root {
+  color-scheme: dark;
+  --ink: #0a111e;
+  --panel: #0e1828;
+  --panel-2: #132238;
+  --line: #1d3050;
+  --line-2: #2b4670;
+  --text: #dce7f6;
+  --muted: #93a8c6;
+  --faint: #5f7697;
+  --cyan: #3fd2e6;
+  --amber: #f4b860;
+  --violet: #a98dff;
+  --ok: #5fe0a2;
+  --bad: #ff7a85;
+  --f-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --r: 10px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 72px); }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--ink); color: var(--text); font: 15px/1.65 var(--f-body); }
+[hidden] { display: none !important; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--ink); }
+a { color: var(--cyan); }
+a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 600; letter-spacing: 0.01em; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.4rem, 6vw, 4.2rem); line-height: 1.02; }
+h2 { font-size: clamp(1.5rem, 3vw, 2.1rem); line-height: 1.15; }
+h3 { font-size: 1.08rem; }
+p { margin: 0; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1140px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.eyebrow { font-family: var(--f-mono); font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.lead { color: var(--muted); font-size: 1.06rem; max-width: 62ch; }
+
+/* top bar */
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--ink) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.topbar-inner { display: flex; align-items: center; gap: 18px; min-height: 56px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-family: var(--f-display); font-weight: 600; white-space: nowrap; }
+.brand-mark { width: 26px; height: 16px; border-radius: 3px; background: linear-gradient(90deg, var(--amber) 0 33%, var(--cyan) 33% 66%, var(--violet) 66%); }
+.nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1; justify-content: flex-end; }
+.nav::-webkit-scrollbar { display: none; }
+.nav a { color: var(--muted); text-decoration: none; font-size: 0.88rem; padding: 6px 10px; border-radius: 6px; white-space: nowrap; }
+.nav a:hover { color: var(--text); background: var(--panel-2); }
+.nav a.nav-live { color: var(--ink); background: var(--cyan); font-weight: 600; }
+
+/* hero */
+.hero { padding-block: 56px 28px; border-bottom: 1px solid var(--line); background:
+  radial-gradient(1200px 420px at 85% -10%, color-mix(in srgb, var(--cyan) 12%, transparent), transparent 70%), var(--ink); }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 40px; align-items: center; }
+.hero-copy { display: grid; gap: 18px; min-width: 0; }
+.status { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.st { display: flex; gap: 10px; align-items: baseline; font-size: 0.95rem; color: var(--muted); }
+.st b { color: var(--text); font-weight: 600; }
+.st .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; transform: translateY(-1px); }
+.st.ok .dot { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 20%, transparent); }
+.st.warn .dot { background: var(--amber); box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 20%, transparent); }
+.hero-cta { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 8px; font: 600 0.92rem var(--f-body); color: var(--text); background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 8px; padding: 9px 14px; cursor: pointer; text-decoration: none; }
+.btn:hover { border-color: var(--cyan); }
+.btn.primary { background: var(--cyan); color: var(--ink); border-color: var(--cyan); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.small { padding: 6px 10px; font-size: 0.84rem; }
+.scope-card { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; min-width: 0; }
+.scope-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); font-family: var(--f-mono); font-size: 0.8rem; color: var(--muted); flex-wrap: wrap; }
+.scope-card canvas { display: block; width: 100%; height: 240px; }
+.scope-foot { padding: 9px 14px; border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--muted); }
+.spec-row { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 30px; color: var(--faint); font-size: 0.82rem; }
+.spec-row span b { color: var(--muted); font-weight: 500; }
+
+/* segmented controls (scheme pickers etc.) */
+.seg { display: inline-flex; background: var(--ink); border: 1px solid var(--line-2); border-radius: 8px; padding: 3px; gap: 2px; flex-wrap: wrap; }
+.seg button { font: 500 0.84rem var(--f-mono); color: var(--muted); background: transparent; border: 0; border-radius: 5px; padding: 5px 10px; cursor: pointer; }
+.seg button[aria-pressed="true"] { color: var(--ink); background: var(--text); }
+.seg button[data-s="ASK"][aria-pressed="true"] { background: var(--amber); }
+.seg button[data-s="FSK"][aria-pressed="true"] { background: var(--cyan); }
+.seg button[data-s="DBPSK"][aria-pressed="true"] { background: var(--violet); }
+
+/* sections */
+.sec { padding-block: 64px; border-bottom: 1px solid var(--line); }
+.sec-head { display: grid; gap: 10px; margin-bottom: 26px; max-width: 760px; }
+.sec-lead { color: var(--muted); max-width: 66ch; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; min-width: 0; }
+.panel h3 { margin-bottom: 8px; }
+.grid { display: grid; gap: 18px; }
+.grid.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-bottom: 14px; }
+.controls label { font-size: 0.84rem; color: var(--muted); }
+.ctl { display: inline-flex; align-items: center; gap: 8px; }
+input[type="text"], select { font: 0.92rem var(--f-mono); color: var(--text); background: var(--ink); border: 1px solid var(--line-2); border-radius: 7px; padding: 7px 10px; min-width: 0; }
+input[type="text"] { width: min(100%, 300px); }
+input[type="range"] { accent-color: var(--cyan); width: 180px; max-width: 100%; }
+.note { font-size: 0.86rem; color: var(--muted); }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0; font-size: 0.9rem; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+canvas.plot { display: block; width: 100%; max-width: 100%; background: var(--ink); border: 1px solid var(--line); border-radius: 8px; }
+
+/* signal chain */
+.chain { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 8px; counter-reset: st; }
+.chain li { position: relative; }
+.chain li:not(:last-child)::after { content: ""; position: absolute; right: -8px; top: 50%; width: 8px; height: 2px; background: var(--line-2); }
+.chain button { width: 100%; height: 100%; text-align: left; display: grid; gap: 4px; align-content: start; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 12px 10px; color: var(--text); cursor: pointer; font: inherit; }
+.chain button:hover { border-color: var(--line-2); }
+.chain button[aria-pressed="true"] { border-color: var(--cyan); background: var(--panel-2); }
+.chain .n { font: 500 0.72rem var(--f-mono); color: var(--faint); }
+.chain .t { font: 600 0.92rem var(--f-display); line-height: 1.2; }
+.chain .s { font-size: 0.76rem; color: var(--muted); line-height: 1.35; }
+.chain-detail { margin-top: 16px; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px; }
+.chain-detail .what { display: grid; gap: 10px; }
+.chain-detail .what p { color: var(--muted); }
+.chain-detail .what p b { color: var(--text); font-weight: 600; }
+.code-ref { font: 0.8rem var(--f-mono); color: var(--faint); }
+
+/* frame builder */
+.bytes { display: flex; flex-wrap: wrap; gap: 4px; }
+.byte { display: grid; place-items: center; min-width: 38px; padding: 5px 4px; border-radius: 5px; font-size: 0.82rem; line-height: 1.15; border: 1px solid transparent; }
+.byte small { font-size: 0.66rem; opacity: 0.8; }
+.f-preamble { background: color-mix(in srgb, var(--faint) 30%, transparent); color: var(--text); }
+.f-sync { background: color-mix(in srgb, var(--violet) 32%, transparent); color: var(--text); }
+.f-type, .f-len { background: color-mix(in srgb, var(--amber) 28%, transparent); color: var(--text); }
+.f-payload { background: color-mix(in srgb, var(--cyan) 22%, transparent); color: var(--text); }
+.f-crc { background: color-mix(in srgb, var(--ok) 30%, transparent); color: var(--text); }
+.f-idle { background: transparent; border-color: var(--line-2); color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 12px 0; font-size: 0.82rem; color: var(--muted); }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid transparent; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 14px 0; }
+.stat { background: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.stat .k { font-size: 0.76rem; color: var(--muted); }
+.stat .v { font: 600 1.15rem var(--f-mono); font-variant-numeric: tabular-nums; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-top: 18px; }
+.fields div { border-left: 3px solid var(--line-2); padding-left: 12px; font-size: 0.9rem; color: var(--muted); }
+.fields b { color: var(--text); display: block; font-family: var(--f-mono); font-weight: 500; }
+
+/* scheme cards */
+.scheme-card { border-top: 3px solid var(--line-2); }
+.scheme-card.ASK { border-top-color: var(--amber); }
+.scheme-card.FSK { border-top-color: var(--cyan); }
+.scheme-card.DBPSK { border-top-color: var(--violet); }
+.scheme-card p { color: var(--muted); font-size: 0.92rem; }
+.scheme-card .rule { font: 0.86rem var(--f-mono); color: var(--text); margin: 8px 0; }
+
+/* tables */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 0.76rem var(--f-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+td.num, th.num { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.pill { display: inline-block; font: 500 0.74rem var(--f-mono); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.ok { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+.pill.bad { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
+.pill.warn { background: color-mix(in srgb, var(--amber) 18%, transparent); color: var(--amber); }
+.pill.info { background: color-mix(in srgb, var(--cyan) 15%, transparent); color: var(--cyan); }
+.pill.s-ASK { color: var(--amber); background: color-mix(in srgb, var(--amber) 15%, transparent); }
+.pill.s-FSK { color: var(--cyan); background: color-mix(in srgb, var(--cyan) 15%, transparent); }
+.pill.s-DBPSK { color: var(--violet); background: color-mix(in srgb, var(--violet) 15%, transparent); }
+
+/* live decoder */
+.live { background: linear-gradient(180deg, color-mix(in srgb, var(--cyan) 5%, var(--ink)), var(--ink) 60%); }
+.sources { display: flex; flex-wrap: wrap; gap: 8px; }
+.sources .btn[aria-pressed="true"] { border-color: var(--cyan); background: color-mix(in srgb, var(--cyan) 16%, var(--panel-2)); }
+.live-status { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 14px 0; font-size: 0.9rem; color: var(--muted); min-height: 28px; }
+.live-status .rec { width: 10px; height: 10px; border-radius: 50%; background: var(--faint); }
+.live-status .rec.on { background: var(--bad); animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .live-status .rec.on { animation: none; } }
+.live-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; }
+.vis-label { gap: 10px; flex-wrap: wrap; }
+.vis { display: grid; gap: 10px; min-width: 0; }
+.vis-label { display: flex; justify-content: space-between; font: 0.74rem var(--f-mono); color: var(--faint); margin-bottom: 4px; }
+.meters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.meter { background: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.meter .k { font: 0.74rem var(--f-mono); color: var(--muted); }
+.meter .bar { height: 6px; border-radius: 3px; background: var(--line); margin-top: 6px; overflow: hidden; }
+.meter .bar i { display: block; height: 100%; width: 0; background: var(--text); transition: width 0.12s linear; }
+.counters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+.log-wrap { max-height: 430px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+.log-wrap table { font-size: 0.84rem; }
+.log-wrap td { font-family: var(--f-mono); }
+.log-wrap tr.example td { color: var(--muted); }
+.log-wrap tr.fresh td { animation: flash 1.4s ease-out; }
+@keyframes flash { from { background: color-mix(in srgb, var(--cyan) 22%, transparent); } to { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .log-wrap tr.fresh td { animation: none; } }
+.howto { margin-top: 16px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; background: var(--panel); }
+.howto summary { cursor: pointer; font-weight: 600; }
+.howto ol { margin: 10px 0 2px; padding-left: 20px; color: var(--muted); display: grid; gap: 4px; }
+.mic-hint { display: none; border: 1px solid color-mix(in srgb, var(--amber) 50%, transparent); background: color-mix(in srgb, var(--amber) 8%, transparent); color: var(--text); border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; margin-top: 10px; }
+.mic-hint.show { display: block; }
+
+/* timeline */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+.chips button { font: 500 0.84rem var(--f-body); color: var(--muted); background: var(--panel); border: 1px solid var(--line-2); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.chips button[aria-pressed="true"] { color: var(--ink); background: var(--text); border-color: var(--text); }
+.timeline { list-style: none; margin: 0; padding: 0 0 0 22px; border-left: 2px solid var(--line); display: grid; gap: 14px; }
+.tl { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 14px 16px; }
+.tl::before { content: ""; position: absolute; left: -30px; top: 18px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); border: 2px solid var(--faint); }
+.tl.ok::before { border-color: var(--ok); background: var(--ok); }
+.tl.fail::before { border-color: var(--bad); background: var(--ink); }
+.tl.decision::before { border-color: var(--amber); background: var(--amber); }
+.tl-head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; margin-bottom: 6px; }
+.tl-date { font: 0.8rem var(--f-mono); color: var(--faint); }
+.tl p { color: var(--muted); font-size: 0.92rem; }
+.tl .fix { margin-top: 6px; color: var(--text); }
+.tl .fix b { color: var(--ok); font-weight: 600; }
+
+/* results */
+.bars { display: grid; gap: 10px; }
+.barrow { display: grid; grid-template-columns: 70px 1fr 80px; gap: 10px; align-items: center; font-size: 0.88rem; }
+.barrow .track { height: 14px; background: var(--ink); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; display: flex; }
+.barrow .track i { display: block; height: 100%; }
+.plan { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.plan li { display: grid; grid-template-columns: 48px 1fr auto; gap: 10px; align-items: baseline; padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.plan .id { font: 600 0.9rem var(--f-mono); color: var(--cyan); }
+.plan span.d { color: var(--muted); font-size: 0.9rem; }
+.plan span.d b { color: var(--text); font-weight: 500; }
+
+footer { padding-block: 40px 56px; color: var(--faint); font-size: 0.86rem; }
+footer .grid { gap: 22px; }
+footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
+
+@media (max-width: 1000px) {
+  .chain { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .chain li:not(:last-child)::after { display: none; }
+  .live-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 860px) {
+  .hero-grid, .grid.two, .chain-detail { grid-template-columns: minmax(0, 1fr); }
+  .grid.three { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 520px) {
+  .chain { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .meters, .counters { grid-template-columns: repeat(2, 1fr); }
+  .barrow { grid-template-columns: 56px 1fr 64px; }
+  .plan li { grid-template-columns: 40px 1fr; }
+  .plan li .pill { grid-column: 2; justify-self: start; }
+  .brand span.txt { display: none; }
+}
+</style>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="#beranda"><span class="brand-mark" aria-hidden="true"></span><span class="txt">FM Multi-Mod Link</span></a>
+    <nav class="nav" aria-label="Bagian halaman">
+      <a href="#alur">Alur</a>
+      <a href="#frame">Frame</a>
+      <a href="#modulasi">Modulasi</a>
+      <a href="#uno">Uno</a>
+      <a href="#fm">FM</a>
+      <a href="#kanal">Kanal</a>
+      <a href="#penerima">Penerima</a>
+      <a href="#decoder" class="nav-live">Decoder live</a>
+      <a href="#jurnal">Jurnal</a>
+      <a href="#hasil">Hasil</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<section id="beranda" class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow">Proyek Dasar Sistem Komunikasi (PDSK)</p>
+      <h1>FM Multi-Mod Link</h1>
+      <p class="lead">Data digital diubah jadi nada audio dengan modulasi ASK, FSK, atau DBPSK oleh Arduino Uno, dipancarkan lewat pemancar FM, ditangkap lagi oleh penerima FM, lalu didemodulasi dan dicek CRC-nya di laptop. Halaman ini menunjukkan setiap tahapnya dan bisa men-decode sinyalnya sendiri.</p>
+      <ul class="status">
+        <li class="st ok"><span class="dot"></span><span><b>Pemancar FM</b> sudah di udara, sekitar 102–104 MHz</span></li>
+        <li class="st ok"><span class="dot"></span><span><b>Link ujung ke ujung</b> berhasil untuk FSK, ASK, dan DBPSK</span></li>
+        <li class="st warn"><span class="dot"></span><span><b>Penerima RDA5807M</b> menunggu modul pengganti</span></li>
+      </ul>
+      <div class="hero-cta">
+        <a class="btn primary" href="#decoder">Coba decoder live</a>
+        <a class="btn" href="#alur">Lihat alur sinyal</a>
+      </div>
+    </div>
+    <figure class="scope-card">
+      <figcaption class="scope-head">
+        <span>Audio yang dibuat Uno · teks "halo PDSK"</span>
+        <span class="seg" id="heroSeg" role="group" aria-label="Pilih modulasi">
+          <button type="button" data-s="ASK" aria-pressed="false">ASK</button>
+          <button type="button" data-s="FSK" aria-pressed="true">FSK</button>
+          <button type="button" data-s="DBPSK" aria-pressed="false">DBPSK</button>
+        </span>
+      </figcaption>
+      <canvas id="heroScope" aria-label="Bentuk gelombang audio yang bergeser, dengan nilai bit di atasnya"></canvas>
+      <div class="scope-foot mono" id="heroFoot">bit 0 · preamble</div>
+    </figure>
+  </div>
+  <div class="wrap spec-row mono">
+    <span><b>3</b> modulasi</span>
+    <span><b>150–1200</b> baud</span>
+    <span>CRC-8 poly <b>0x07</b></span>
+    <span>PRBS-9 untuk <b>BER</b></span>
+    <span>DDS <b>31 250 Hz</b></span>
+    <span>PWM <b>62.5 kHz</b> di pin D3</span>
+  </div>
+</section>
+
+<section id="alur" class="sec">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="eyebrow">Gambaran besar</p>
+      <h2>Alur sinyal, dari teks sampai teks lagi</h2>
+      <p class="sec-lead">Sembilan tahap yang dilewati satu pesan. Klik tiap tahap untuk melihat apa yang terjadi di sana dan angka pentingnya.</p>
+    </header>
+    <ol class="chain" id="chain"></ol>
+    <div class="chain-detail" id="chainDetail" aria-live="polite"></div>
+  </div>
+</section>
+
+<section id="frame" class="sec">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="eyebrow">01 · Data</p>
+      <h2>Frame: bungkus untuk setiap pesan</h2>
+      <p class="sec-lead">Penerima tidak tahu kapan pesan mulai. Karena itu setiap pesan dibungkus: ada pola pembuka untuk menyamakan ritme bit, kata sinkron untuk menandai awal, panjang data, isi, dan CRC untuk mengecek apakah ada bit yang rusak. Ketik teks di bawah dan lihat frame-nya berubah.</p>
+    </header>
+    <div class="panel">
+      <div class="controls">
+        <span class="ctl"><label for="frameText">Teks</label><input type="text" id="frameText" value="halo PDSK" maxlength="100" autocomplete="off"></span>
+        <span class="seg" id="frameKind" role="group" aria-label="Jenis isi">
+          <button type="button" data-k="TEXT" aria-pressed="true">Teks</button>
+          <button type="button" data-k="PRBS" aria-pressed="false">PRBS-9</button>
+        </span>
+        <span class="ctl"><label for="frameBaud">Bit rate</label>
+          <select id="frameBaud"><option>150</option><option selected>300</option><option>600</option><option>1200</option></select></span>
+      </div>
+      <div class="bytes mono" id="frameBytes"></div>
+      <div class="legend">
+        <span><i class="f-preamble"></i>preamble</span><span><i class="f-sync"></i>sync</span><span><i class="f-type"></i>type + len</span>
+        <span><i class="f-payload"></i>payload</span><span><i class="f-crc"></i>CRC-8</span><span><i class="f-idle"></i>idle</span>
+      </div>
+      <div class="stats" id="frameStats"></div>
+      <div class="vis-label"><span>bit yang dikirim (MSB dulu), kotak terisi = 1</span><span id="frameBitCount"></span></div>
+      <canvas class="plot" id="frameBits" style="height:120px"></canvas>
+    </div>
+    <div class="fields">
+      <div><b>preamble · AA AA AA AA</b>32 bit 1010… supaya penerima bisa mengunci ritme bit.</div>
+      <div><b>sync · 2D D4</b>Kata sinkron 16 bit. Decoder mencari 8 bit preamble terakhir + sync ini (24 bit, boleh salah 1).</div>
+      <div><b>type · 3C / C3</b>3C = teks, C3 = PRBS. Keduanya beda di 8 bit, jadi masih terbaca walau 3 bit rusak.</div>
+      <div><b>len</b>Jumlah byte isi, 0–100 (RAM Uno cuma 2 KB).</div>
+      <div><b>payload</b>Isi pesan: teks Latin-1 atau 64 byte PRBS-9 untuk mengukur BER.</div>
+      <div><b>CRC-8 · poly 0x07</b>Dihitung dari type, len, dan payload. Kalau CRC terima ≠ CRC hitung, frame dibuang.</div>
+      <div><b>idle · FF FF FF FF</b>32 bit jeda di antara frame.</div>
+    </div>
+  </div>
+</section>
+
+<section id="modulasi" class="sec">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="eyebrow">02 · Modulasi</p>
+      <h2>Satu bit, tiga cara menyuarakannya</h2>
+      <p class="sec-lead">Bit tidak bisa dikirim lewat radio FM begitu saja, karena FM membawa suara. Jadi tiap bit diubah jadi nada audio. Gelombang di bawah adalah sampel yang persis sama dengan buatan Uno (DDS 31 250 Hz, tabel sinus 8 bit).</p>
+    </header>
+    <div class="panel">
+      <div class="controls">
+        <span class="seg" id="modSeg" role="group" aria-label="Modulasi">
+          <button type="button" data-s="ASK" aria-pressed="false">ASK</button>
+          <button type="button" data-s="FSK" aria-pressed="true">FSK</button>
+          <button type="button" data-s="DBPSK" aria-pressed="false">DBPSK</button>
+        </span>
+        <span class="ctl"><label for="modBaud">Bit rate</label>
+          <select id="modBaud"><option>150</option><option selected>300</option><option>600</option><option>1200</option></select></span>
+        <span class="ctl"><label for="modWin">Bagian</label>
+          <select id="modWin">
+            <option value="26">akhir preamble + awal sync</option>
+            <option value="44">akhir sync + type</option>
+            <option value="64">awal payload ("ha")</option>
+          </select></span>
+        <button type="button" class="btn small" id="modPlay">Putar suaranya</button>
+        <button type="button" class="btn small" id="modStop" disabled>Stop</button>
+      </div>
+      <canvas class="plot" id="modScope" style="height:230px" aria-label="Gelombang modulasi untuk 24 bit"></canvas>
+      <p class="note" id="modNote" style="margin-top:10px"></p>
+    </div>
+    <div class="grid three" style="margin-top:18px">
+      <div class="panel scheme-card ASK">
+        <h3>ASK · Amplitude Shift Keying</h3>
+        <p class="rule">1 → nada 1800 Hz · 0 → diam</p>
+        <p>Paling sederhana: nada dinyalakan dan dimatikan. Kelemahannya, noise dan perubahan volume bisa dikira bit 1.</p>
+      </div>
+      <div class="panel scheme-card FSK">
+        <h3>FSK · Frequency Shift Keying</h3>
+        <p class="rule">1 → 1200 Hz · 0 → 2200 Hz</p>
+        <p>Selalu ada nada, cuma frekuensinya berganti, dan fasanya tetap nyambung. Decoder membandingkan energi di 1200 dan 2200 Hz, jadi tidak peduli keras-pelannya suara.</p>
+      </div>
+      <div class="panel scheme-card DBPSK">
+        <h3>DBPSK · Differential BPSK</h3>
+        <p class="rule">0 → fasa dibalik 180° · 1 → fasa tetap</p>
+        <p>Nada 1800 Hz terus, yang berubah fasanya. Decoder membandingkan tiap bit dengan bit sebelumnya, jadi tidak butuh fasa acuan.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="uno" class="sec">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="eyebrow">03 · Di dalam Arduino Uno</p>
+      <h2>DDS, PWM, lalu filter RC</h2>
+      <p class="sec-lead">Uno tidak punya DAC. Jadi Timer1 memanggil interrupt 31 250 kali per detik. Tiap kali, akumulator fasa 32 bit ditambah, 8 bit teratasnya jadi indeks tabel sinus, dan hasilnya dipasang sebagai duty cycle PWM 62.5 kHz di pin D3. Filter RC dua tingkat lalu meratakan pulsa PWM jadi gelombang audio.</p>
+    </header>
+    <div class="grid two">
+      <div class="panel">
+        <h3>Kalkulator DDS</h3>
+        <div class="controls">
+          <span class="ctl"><label for="ddsF">Frekuensi</label><input type="range" id="ddsF" min="100" max="4000" step="10" value="1200"></span>
+          <span class="mono" id="ddsFv">1200 Hz</span>
+        </div>
+        <dl class="kv" id="ddsKv"></dl>
+        <div class="vis-label" style="margin-top:12px"><span>sampel DDS → pulsa PWM → keluaran filter (1.28 ms)</span></div>
+        <canvas class="plot" id="ddsPlot" style="height:250px"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Respon filter RC + de-emphasis</h3>
+        <p class="note">R1 = R2 = 1.5 kΩ, C1 = C2 = 10 nF, dibebani trimpot 10 kΩ. Tiap tingkat sendiri fc = 10.6 kHz, tapi dua tingkat saling membebani, jadi gabungannya −3 dB sekitar 5 kHz. Penerima FM menambah de-emphasis 50 µs.</p>
+        <canvas class="plot" id="filterPlot" style="height:250px;margin-top:10px"></canvas>
+        <div class="tbl-wrap" style="margin-top:10px">
+          <table id="filterTbl"><thead><tr><th>Frekuensi</th><th class="num">Filter Uno</th><th class="num">+ de-emphasis</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="fm" class="sec">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="eyebrow">04 · Pemancar FM</p>
+      <h2>Nada audio menggeser frekuensi pembawa</h2>
+      <p class="sec-lead">Pemancar kit S-151 (osilator C828 + penguat C930, baterai 9 V) menerima audio dari Uno lewat colokan 3.5 mm. Makin besar tegangan audio, makin jauh frekuensi pembawa bergeser. Besar geseran ini (deviasi) diatur dengan trimpot 10 kΩ.</p>
+    </header>
+    <div class="grid two">
+      <div class="panel">
+        <div class="controls">
+          <span class="ctl"><label for="fmDev">Deviasi</label><input type="range" id="fmDev" min="5" max="100" step="5" value="40"></span>
+          <span class="mono" id="fmDevV">40 kHz</span>
+          <span class="seg" id="fmTone" role="group" aria-label="Nada audio">
+            <button type="button" data-f="1200" aria-pressed="true">1200 Hz</button>
+            <button type="button" data-f="1800" aria-pressed="false">1800 Hz</button>
+            <button type="button" data-f="2200" aria-pressed="false">2200 Hz</button>
+          </span>
+        </div>
+        <canvas class="plot" id="fmPlot" style="height:230px" aria-label="Nada audio dan gelombang FM yang rapat-renggang"></canvas>
+        <dl class="kv" id="fmKv" style="margin-top:12px"></dl>
+      </div>
+      <div class="panel">
+        <h3>Yang kami amati di pemancar</h3>
+        <dl class="kv">
+          <dt>Frekuensi awal</dt><dd>104.2 MHz (24 Nov, ditangkap radio FM HP)</dd>
+          <dt>±30 menit kemudian</dt><dd>102.4 MHz</dd>
+          <dt>Drift vs baterai</dt><dd>±0.93 MHz per volt (9 V → 6 V: 106.4 → 103.6 MHz)</dd>
+          <dt>Jangkauan (antena 75 cm)</dt><dd>jernih ≤ 10 m, putus-putus 30–35 m</dd>
+          <dt>Jarak ke Uno</dt><dd>≥ 1 m; lebih dekat mengganggu I2C</dd>
+        </dl>
+        <p class="note" style="margin-top:12px">Karena osilatornya LC sederhana, frekuensi bergeser saat baterai turun atau saat tangan mendekat. Di penerima RDA5807M, perintah <span class="mono">FIND</span> mencari ulang frekuensi pemancar secara otomatis (±1.5 MHz).</p>
+        <p class="note" style="margin-top:8px">Trimpot terlalu besar membuat deviasi berlebih dan bunyi pecah; terlalu kecil membuat sinyal tenggelam dalam desis. Ini yang diukur di percobaan E7.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="kanal" class="sec">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="eyebrow">05 · Kanal</p>
+      <h2>Seberapa tahan tiap modulasi terhadap noise?</h2>
+      <p class="sec-lead">Simulasi ini memakai modulator dan decoder yang sama dengan sistem asli. Atur SNR dan error clock pemancar, lalu kirim frame PRBS lewat kanal ber-noise. Hasilnya: berapa frame ketemu dan berapa bit yang salah (BER).</p>
+    </header>
+    <div class="panel">
+      <div class="controls">
+        <span class="ctl"><label for="simSnr">SNR di pita 400–3600 Hz</label><input type="range" id="simSnr" min="-10" max="20" step="1" value="-2"></span>
+        <span class="mono" id="simSnrV">−2 dB</span>
+        <span class="ctl"><label for="simClk">Error clock TX</label><input type="range" id="simClk" min="-10" max="10" step="1" value="-1"></span>
+        <span class="mono" id="simClkV">−0.1 %</span>
+        <span class="ctl"><label for="simBaud">Bit rate</label>
+          <select id="simBaud"><option>150</option><option selected>300</option><option>600</option><option>1200</option></select></span>
+        <button type="button" class="btn small primary" id="simRun">Kirim 3 frame PRBS</button>
+      </div>
+      <div class="grid two">
+        <div class="tbl-wrap">
+          <table id="simTbl"><thead><tr><th>Skema</th><th class="num">Frame ketemu</th><th class="num">CRC OK</th><th class="num">Bit salah</th><th class="num">BER</th></tr></thead><tbody></tbody></table>
+          <p class="note" id="simNote" style="margin-top:10px">Tekan tombol untuk mulai. Satu percobaan butuh sekitar 1–3 detik.</p>
+        </div>
+        <div>
+          <div class="vis-label"><span>sebaran keputusan lunak (−1 = bit 0, +1 = bit 1)</span><span id="simSoftLbl"></span></div>
+          <canvas class="plot" id="simSoft" style="height:200px"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="penerima" class="sec">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="eyebrow">06 · Penerima</p>
+      <h2>Menangkap kembali sinyal FM</h2>
+      <p class="sec-lead">Penerima utama adalah chip RDA5807M yang dikendalikan Uno lewat I2C. Sambil menunggu modul pengganti, radio FM di HP dipakai sebagai penerima sementara.</p>
+    </header>
+    <div class="grid three">
+      <div class="panel">
+        <h3>RDA5807M (modul RRD-102)</h3>
+        <p class="note">Penerima FM 76–108 MHz dalam satu chip, 3.3 V. Uno 5 V berbicara dengannya lewat level converter BSS138. Uno mengatur frekuensi, volume, mode mono, dan membaca RSSI (kuat sinyal 0–127).</p>
+        <dl class="kv" style="margin-top:10px">
+          <dt>Alamat I2C</dt><dd>0x10, 0x11 (+0x60)</dd>
+          <dt>Tuning</dt><dd>reg 03 = (ch &lt;&lt; 6) | 0x10</dd>
+          <dt>RSSI</dt><dd>reg 0B &gt;&gt; 9</dd>
+        </dl>
+      </div>
+      <div class="panel">
+        <h3>Radio FM di HP (sementara)</h3>
+        <p class="note">Earphone dicolok sebagai antena, suara keluar lewat speaker, lalu ditangkap mikrofon laptop. Kurang rapi untuk pengukuran resmi, tapi cukup untuk membuktikan link berjalan dari ujung ke ujung.</p>
+      </div>
+      <div class="panel">
+        <h3>RTL-SDR + SDR++ (rencana)</h3>
+        <p class="note">Kalau RTL-SDR datang: spektrum dan drift pemancar terlihat di waterfall, dan audio hasil demodulasi bisa langsung di-decode tanpa kabel.</p>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:18px">
+      <h3>Diagnosa modul 1: register mentah dari perintah REG</h3>
+      <p class="note">Modul pertama menjawab di I2C, tapi tidak menangkap satu stasiun pun walau antena 75 cm. Isi registernya dibaca langsung untuk memisahkan masalah firmware dari masalah hardware.</p>
+      <div class="tbl-wrap" style="margin-top:10px">
+        <table>
+          <thead><tr><th>Register</th><th>Nilai</th><th>Artinya</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">00</td><td class="mono">5804</td><td>ID chip RDA5807M asli</td></tr>
+            <tr><td class="mono">02</td><td class="mono">E005</td><td>audio aktif, tidak mute, mono, chip menyala</td></tr>
+            <tr><td class="mono">03</td><td class="mono">2A40</td><td>kanal 169 → 87.0 + 16.9 = 103.9 MHz</td></tr>
+            <tr><td class="mono">0A</td><td class="mono">40A9</td><td>tuning selesai (STC = 1) di kanal 169</td></tr>
+            <tr><td class="mono">0B</td><td class="mono">048F</td><td>RSSI = 2, FM_TRUE = 0: tidak ada sinyal masuk</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note" style="margin-top:10px">Kesimpulan: firmware dan I2C beres, tapi bagian RF modul ini rusak. Pemancar dari jarak 10–30 cm cuma terbaca RSSI ±10, padahal modul sehat seharusnya 50 ke atas. Modul baru sudah dibeli.</p>
+    </div>
+  </div>
+</section>
+
+<section id="decoder" class="sec live">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="eyebrow">07 · Decoder</p>
+      <h2>Decoder live di browser</h2>
+      <p class="sec-lead">Decoder ini adalah terjemahan baris demi baris dari decoder Python proyek: band-pass 400–3600 Hz, mixing ke 0 Hz, keputusan lunak per sampel, pencarian preamble + sync, pelacakan clock ±1 %, lalu CRC-8. Pilih sumber suara, dan setiap frame yang tertangkap muncul di tabel.</p>
+    </header>
+    <div class="panel">
+      <div class="controls">
+        <div class="sources" id="sources" role="group" aria-label="Sumber suara">
+          <button type="button" class="btn small" data-src="mic" aria-pressed="false">Mikrofon</button>
+          <button type="button" class="btn small" data-src="rec-FSK" aria-pressed="false">Rekaman FSK</button>
+          <button type="button" class="btn small" data-src="rec-ASK" aria-pressed="false">Rekaman ASK</button>
+          <button type="button" class="btn small" data-src="rec-DBPSK" aria-pressed="false">Rekaman DBPSK</button>
+          <button type="button" class="btn small" data-src="test" aria-pressed="false">Sinyal uji</button>
+          <label class="btn small" for="liveFile">File sendiri…</label>
+          <input type="file" id="liveFile" accept="audio/*,.wav,.mp3,.m4a,.aac,.ogg" hidden>
+          <button type="button" class="btn small" id="liveStop" disabled>Stop</button>
+        </div>
+      </div>
+      <div class="controls">
+        <span class="ctl"><label for="liveScheme">Skema</label>
+          <select id="liveScheme"><option value="auto" selected>otomatis</option><option>ASK</option><option>FSK</option><option>DBPSK</option></select></span>
+        <span class="ctl"><label for="liveBaud">Bit rate</label>
+          <select id="liveBaud"><option>150</option><option selected>300</option><option>600</option><option>1200</option></select></span>
+        <span class="ctl"><label for="testText">Teks sinyal uji</label><input type="text" id="testText" value="halo dari browser" maxlength="100" autocomplete="off"></span>
+        <span class="ctl"><label for="testScheme">Skema uji</label>
+          <select id="testScheme"><option>ASK</option><option selected>FSK</option><option>DBPSK</option></select></span>
+      </div>
+      <div class="live-status"><span class="rec" id="liveRec"></span><span id="liveStatus">Belum mendengarkan. Pilih sumber suara di atas.</span></div>
+      <div class="mic-hint" id="micHint"></div>
+      <div class="live-grid">
+        <div class="vis">
+          <div>
+            <div class="vis-label"><span>spektrum 0–4 kHz</span><span>garis: 1200 · 1800 · 2200 Hz</span></div>
+            <canvas class="plot" id="liveSpec" style="height:150px"></canvas>
+          </div>
+          <div>
+            <div class="vis-label"><span>waterfall (waktu berjalan ke bawah)</span><span id="liveFs"></span></div>
+            <canvas class="plot" id="liveFall" style="height:150px"></canvas>
+          </div>
+          <div class="meters">
+            <div class="meter"><div class="k">1200 Hz</div><div class="bar"><i id="m1200" style="background:var(--cyan)"></i></div></div>
+            <div class="meter"><div class="k">1800 Hz</div><div class="bar"><i id="m1800" style="background:var(--violet)"></i></div></div>
+            <div class="meter"><div class="k">2200 Hz</div><div class="bar"><i id="m2200" style="background:var(--cyan);opacity:.6"></i></div></div>
+            <div class="meter"><div class="k">level</div><div class="bar"><i id="mLevel"></i></div></div>
+          </div>
+          <div>
+            <div class="vis-label"><span>keputusan lunak 2 detik terakhir (+ = bit 1)</span><span id="liveSoftLbl"></span></div>
+            <canvas class="plot" id="liveSoft" style="height:110px"></canvas>
+          </div>
+        </div>
+        <div>
+          <div class="counters">
+            <div class="stat"><div class="k">CRC OK</div><div class="v" id="cOk" style="color:var(--ok)">0</div></div>
+            <div class="stat"><div class="k">CRC gagal</div><div class="v" id="cBad" style="color:var(--bad)">0</div></div>
+            <div class="stat"><div class="k">skema</div><div class="v" id="cScheme">–</div></div>
+            <div class="stat"><div class="k">clock TX</div><div class="v" id="cClock">–</div></div>
+          </div>
+          <div class="log-wrap">
+            <table>
+              <thead><tr><th>Waktu</th><th>Skema</th><th>Isi</th><th>CRC</th><th class="num">Mutu</th><th class="num">Clock</th></tr></thead>
+              <tbody id="liveLog"></tbody>
+            </table>
+          </div>
+          <p class="note" id="logNote" style="margin-top:8px">Baris abu-abu adalah contoh dari rekaman FSK 24 Nov, sebelum halaman ini mendengarkan apa pun.</p>
+        </div>
+      </div>
+      <details class="howto">
+        <summary>Cara demo dengan pemancar dan radio HP</summary>
+        <ol>
+          <li>Colokkan kabel audio pemancar ke jack di breadboard, nyalakan pemancar, jauhkan ±1 m dari Uno.</li>
+          <li>Kirim pesan dari Uno: <span class="mono">M halo PDSK</span>, skema <span class="mono">S0</span> / <span class="mono">S1</span> / <span class="mono">S2</span>, bit rate <span class="mono">R300</span>.</li>
+          <li>Setel radio FM HP ke frekuensi pemancar sampai bunyi data terdengar jelas; nyalakan speaker.</li>
+          <li>Dekatkan speaker HP ke mikrofon laptop, tekan <b>Mikrofon</b>, dan izinkan akses mikrofon.</li>
+          <li>Frame yang tertangkap muncul di tabel. Kalau semuanya gagal, cek frekuensi radio (pemancar bisa bergeser) dan kecilkan volume HP bila suaranya pecah.</li>
+        </ol>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section id="jurnal" class="sec">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="eyebrow">Jurnal percobaan</p>
+      <h2>Yang berhasil, yang gagal, dan apa yang kami pelajari</h2>
+      <p class="sec-lead">Catatan apa adanya dari proses membangun sistem ini, termasuk kegagalan dan cara menemukannya.</p>
+    </header>
+    <div class="chips" id="tlChips" role="group" aria-label="Saring jurnal">
+      <button type="button" data-f="all" aria-pressed="true">Semua</button>
+      <button type="button" data-f="ok" aria-pressed="false">Berhasil</button>
+      <button type="button" data-f="fail" aria-pressed="false">Gagal &amp; perbaikan</button>
+      <button type="button" data-f="decision" aria-pressed="false">Keputusan</button>
+    </div>
+    <ol class="timeline" id="timeline"></ol>
+  </div>
+</section>
+
+<section id="hasil" class="sec">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="eyebrow">Hasil &amp; rencana</p>
+      <h2>Angka yang sudah terukur</h2>
+      <p class="sec-lead">Uji ujung ke ujung 24 Nov: Uno → pemancar FM → radio FM HP → speaker HP → mikrofon laptop → decoder, teks "halo PDSK" di 300 baud, rekaman 10 detik per skema.</p>
+    </header>
+    <div class="grid two">
+      <div class="panel">
+        <h3>Frame yang ter-decode</h3>
+        <div class="bars" id="resBars" style="margin-top:12px"></div>
+        <div class="tbl-wrap" style="margin-top:14px">
+          <table>
+            <thead><tr><th>Skema</th><th class="num">CRC OK</th><th class="num">Gagal</th><th class="num">Sukses</th></tr></thead>
+            <tbody>
+              <tr><td><span class="pill s-FSK">FSK</span></td><td class="num">6</td><td class="num">2</td><td class="num">75 %</td></tr>
+              <tr><td><span class="pill s-ASK">ASK</span></td><td class="num">14</td><td class="num">3</td><td class="num">82 %</td></tr>
+              <tr><td><span class="pill s-DBPSK">DBPSK</span></td><td class="num">12</td><td class="num">4</td><td class="num">75 %</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note" style="margin-top:10px">Clock pemancar terukur −999 ppm (Uno sekitar 0.1 % lebih lambat), sudah ditangani pelacakan clock decoder. Frame gagal berasal dari jalur akustik (noise ruangan, speaker HP terlalu keras), bukan dari rangkaian.</p>
+      </div>
+      <div class="panel">
+        <h3>Verifikasi</h3>
+        <ul style="margin:8px 0 0;padding-left:18px;display:grid;gap:8px;color:var(--muted)">
+          <li><b style="color:var(--text)">Simulasi firmware</b>: kode C++ yang sama dengan di Uno, lewat model filter RC, de-emphasis, dan noise 30 dB, untuk 3 skema × 4 bit rate plus clock ±0.5 %. Semua lolos.</li>
+          <li><b style="color:var(--text)">Selftest decoder Python</b>: lolos, termasuk clock ±0.5 %.</li>
+          <li><b style="color:var(--text)">Decoder di halaman ini</b>: hasilnya identik dengan Python pada ketiga rekaman (6/2, 14/3, 12/4).</li>
+          <li><b style="color:var(--text)">Hardware</b>: perintah serial, EEPROM, I2C, filter audio, dan pemancar terbukti di alat sungguhan.</li>
+        </ul>
+        <h3 style="margin-top:18px">Pengukuran resmi (setelah RDA5807M terpasang)</h3>
+        <ul class="plan" style="margin-top:10px">
+          <li><span class="id">E1</span><span class="d"><b>Respon frekuensi</b> dengan sweep 100 Hz–12 kHz</span><span class="pill warn">menunggu RDA</span></li>
+          <li><span class="id">E2</span><span class="d"><b>SNR vs jarak</b> dengan nada 1000 Hz</span><span class="pill warn">menunggu RDA</span></li>
+          <li><span class="id">E3</span><span class="d"><b>RSSI vs jarak</b> dari register RDA</span><span class="pill warn">menunggu RDA</span></li>
+          <li><span class="id">E4</span><span class="d"><b>BER vs jarak</b> untuk ASK, FSK, DBPSK</span><span class="pill warn">menunggu RDA</span></li>
+          <li><span class="id">E5</span><span class="d"><b>BER vs bit rate</b> 150–1200 baud</span><span class="pill warn">menunggu RDA</span></li>
+          <li><span class="id">E6</span><span class="d"><b>Spektrum</b> tiap skema</span><span class="pill info">bisa dilihat di decoder live</span></li>
+          <li><span class="id">E7</span><span class="d"><b>Over-deviation</b>: 5 posisi trimpot</span><span class="pill warn">menunggu RDA</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap grid three">
+    <div>
+      <h3>Perangkat</h3>
+      <p>Arduino Uno R3 · pemancar FM kit S-151 · RDA5807M (RRD-102) · level converter BSS138 · filter RC 1.5 kΩ / 10 nF · trimpot 10 kΩ · jack TRRS 3.5 mm</p>
+    </div>
+    <div>
+      <h3>Perangkat lunak</h3>
+      <p>Firmware C++ (Arduino) · Python: numpy, sounddevice, pyserial, matplotlib · halaman ini: JavaScript, Web Audio API, Web Worker</p>
+    </div>
+    <div>
+      <h3>Proyek</h3>
+      <p>FM Multi-Mod Link: Komunikasi Data Digital (ASK, FSK, DBPSK) melalui Kanal FM. Mata kuliah Dasar Sistem Komunikasi.<br>Kode sumber, firmware, dan rekaman: <a href="https://github.com/Arsa07lol/fmlink">github.com/Arsa07lol/fmlink</a></p>
+    </div>
+  </div>
+</footer>
+
+<script src="fmcore.js"></script>
+<script src="decoder.js"></script>
+<script src="app.js"></script>

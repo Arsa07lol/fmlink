@@ -1,0 +1,4 @@
+# private notes, never public
+CLAUDE.md
+__pycache__/
+*.pyc

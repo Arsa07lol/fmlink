@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>FM Link decoder selftest</title>
+<style>
+  body { background: #0d1524; color: #d7e3f4; font: 13px/1.5 ui-monospace, Consolas, monospace; margin: 0; padding: 16px; }
+  .ok { color: #5fe0b0; } .bad { color: #ff8a8a; }
+</style>
+</head>
+<body>
+<pre id="out">running...</pre>
+<script src="fmcore.js"></script>
+<script src="decoder.js"></script>
+<script>
+(async function () {
+  const C = window.FMCore, D = window.FMDecoder;
+  const out = document.getElementById("out");
+  const lines = [];
+  const log = (s) => { lines.push(s); out.textContent = lines.join("\n"); };
+  const FS = 48000;
+  let fails = 0;
+
+  log("== synthetic round trip (Uno DDS -> 48 kHz, 3 frames each) ==");
+  log("scheme baud  clock   snr   text_ok prbs_ok/errs  detected  ms");
+  const cases = [];
+  for (const sch of C.SCHEMES) for (const baud of C.BAUDS) cases.push([sch, baud, 1.0, 30]);
+  for (const sch of C.SCHEMES) for (const clk of [1.005, 0.995]) cases.push([sch, 300, clk, 20]);
+  for (const sch of C.SCHEMES) cases.push([sch, 300, 1.0, 8]);
+  for (const [sch, baud, clk, snr] of cases) {
+    const t = performance.now();
+    const ft = C.buildFrame("TEXT", "HELLO PDSK");
+    const fp = C.buildFrame("PRBS");
+    const lead = new Float32Array(Math.round(0.3 * C.FS_UNO));
+    const a = C.modulateUno(ft.bits, sch, baud, 3), b = C.modulateUno(fp.bits, sch, baud, 2);
+    const x0 = new Float32Array(lead.length + a.length + b.length + lead.length);
+    x0.set(lead, 0); x0.set(a, lead.length); x0.set(b, lead.length + a.length);
+    const x = C.addNoise(C.resample(x0, C.FS_UNO, FS, clk), snr);
+    const r = D.decode(x, FS, baud, "auto");
+    const tOk = r.frames.filter(f => f.type === "TEXT" && f.crcOk && f.text === "HELLO PDSK").length;
+    const ps = r.frames.filter(f => f.type === "PRBS");
+    const pOk = ps.filter(f => f.crcOk).length, pErr = ps.reduce((s, f) => s + f.errors, 0);
+    const good = r.scheme === sch && tOk >= 2 && pOk >= 1;
+    if (!good && snr >= 20) fails++;
+    log(`${sch.padEnd(6)} ${String(baud).padEnd(5)} ${clk.toFixed(3)} ${String(snr).padStart(3)}dB   ${tOk}/3     ${pOk}/2 ${String(pErr).padStart(4)}     ${String(r.scheme).padEnd(6)} ${Math.round(performance.now() - t).toString().padStart(4)}  ${good ? "OK" : (snr >= 20 ? "FAIL" : "check")}`);
+    await new Promise(res => setTimeout(res, 0));
+  }
+
+  log("");
+  log("== real recordings (phone FM radio -> laptop mic, 24 Nov) ==");
+  const files = [["rekaman_fsk.wav", "FSK", 6, 2], ["rekaman_ask.wav", "ASK", 14, 3], ["rekaman_dbpsk.wav", "DBPSK", 12, 4]];
+  for (const [name, want, pyOk, pyBad] of files) {
+    try {
+      const res = await fetch("audio/" + name);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const buf = await res.arrayBuffer();
+      const ctx = new OfflineAudioContext(1, 1, FS);
+      const audio = await ctx.decodeAudioData(buf);
+      const t = performance.now();
+      const r = D.decode(audio.getChannelData(0), audio.sampleRate, 300, "auto");
+      const ok = r.frames.filter(f => f.crcOk).length, bad = r.frames.length - ok;
+      const match = r.scheme === want;
+      if (!match) fails++;
+      log(`${name.padEnd(20)} detected ${String(r.scheme).padEnd(6)} CRC OK ${ok}  FAIL ${bad}   (python: ${want} ${pyOk}/${pyBad})  ${Math.round(performance.now() - t)} ms  ${match ? "OK" : "FAIL"}`);
+      for (const f of r.frames.slice(0, 3)) log(`   t=${(f.pos / FS).toFixed(2)}s ${f.type} "${f.text || ""}" ${f.crcOk ? "CRC OK" : "CRC FAIL"} clock ${f.clockPpm} ppm`);
+    } catch (e) {
+      fails++;
+      log(`${name}: ERROR ${e.message}`);
+    }
+  }
+
+  log("");
+  log("== live decoder (streaming, 0.5 s chunks) ==");
+  {
+    const ft = C.buildFrame("TEXT", "LIVE TEST");
+    const x = C.addNoise(C.resample(C.modulateUno(ft.bits, "FSK", 300, 8), C.FS_UNO, FS, 0.999), 25);
+    const ld = new D.LiveDecoder(FS, 6);
+    let got = 0, dup = 0;
+    const seen = new Set();
+    const take = (r) => {
+      for (const f of r.fresh) {
+        const key = Math.round(f.abs / (FS * 0.3));
+        if (seen.has(key)) dup++; seen.add(key);
+        if (f.crcOk && f.text === "LIVE TEST") got++;
+      }
+    };
+    for (let i = 0; i < x.length; i += FS / 2) {
+      ld.push(x.subarray(i, Math.min(x.length, i + FS / 2)));
+      take(ld.run(300, "auto"));
+    }
+    take(ld.run(300, "auto", true));
+    const good = got >= 6 && dup === 0;
+    if (!good) fails++;
+    log(`8 frames sent, ${got} decoded with CRC OK, ${dup} duplicates  ${good ? "OK" : "FAIL"}`);
+  }
+
+  log("");
+  log("== web worker (same as the live page) ==");
+  try {
+    const w = new Worker("decoder-worker.js");
+    const ft = C.buildFrame("TEXT", "WORKER OK");
+    const x = C.addNoise(C.resample(C.modulateUno(ft.bits, "DBPSK", 600, 10), C.FS_UNO, FS, 1.002), 20);
+    let got = 0, runs = 0, msMax = 0;
+    await new Promise((resolve) => {
+      let i = 0;
+      w.onmessage = (e) => {
+        runs++; msMax = Math.max(msMax, e.data.ms);
+        got += e.data.fresh.filter(f => f.crcOk && f.text === "WORKER OK").length;
+        step();
+      };
+      w.postMessage({ type: "init", fs: FS, seconds: 6 });
+      let finalSent = false;
+      function step() {
+        if (i >= x.length) {
+          if (finalSent) { resolve(); return; }
+          finalSent = true;
+          w.postMessage({ type: "run", baud: 600, scheme: "auto", final: true });
+          return;
+        }
+        const chunk = x.slice(i, Math.min(x.length, i + FS / 2)); i += FS / 2;
+        w.postMessage({ type: "push", chunk }, [chunk.buffer]);
+        w.postMessage({ type: "run", baud: 600, scheme: "auto" });
+      }
+      step();
+    });
+    w.terminate();
+    const good = got >= 8;
+    if (!good) fails++;
+    log(`10 frames sent, ${got} decoded with CRC OK in ${runs} runs, slowest run ${msMax} ms  ${good ? "OK" : "FAIL"}`);
+  } catch (e) {
+    fails++;
+    log("worker: ERROR " + e.message);
+  }
+
+  log("");
+  log(fails ? `SELFTEST: ${fails} FAIL` : "SELFTEST PASSED");
+  document.title = fails ? "FAIL" : "PASSED";
+})();
+</script>
+</body>
+</html>
