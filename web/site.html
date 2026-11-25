@@ -201,6 +201,19 @@ td.num, th.num { text-align: right; font-family: var(--f-mono); font-variant-num
 .howto ol { margin: 10px 0 2px; padding-left: 20px; color: var(--muted); display: grid; gap: 4px; }
 .mic-hint { display: none; border: 1px solid color-mix(in srgb, var(--amber) 50%, transparent); background: color-mix(in srgb, var(--amber) 8%, transparent); color: var(--text); border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; margin-top: 10px; }
 .mic-hint.show { display: block; }
+.mic-hint.good { border-color: color-mix(in srgb, var(--ok) 50%, transparent); background: color-mix(in srgb, var(--ok) 8%, transparent); }
+
+/* transmitter panel (Web Serial to the Uno) */
+.tx-panel { margin-bottom: 18px; border-top: 3px solid var(--amber); }
+.tx-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 8px; }
+.tx-head h3 { margin: 0; }
+.tx-panel > .note { margin-bottom: 14px; max-width: 78ch; }
+.tx-grid { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 16px; align-items: start; }
+.tx-grid .kv dd { overflow-wrap: anywhere; }
+.uno-log { min-height: 110px; max-height: 170px; overflow: auto; background: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font: 0.8rem/1.5 var(--f-mono); color: var(--muted); overflow-wrap: anywhere; }
+.uno-log .me { color: var(--cyan); }
+.uno-log .ph { color: var(--faint); }
+.pill.idle { background: color-mix(in srgb, var(--faint) 22%, transparent); color: var(--muted); }
 
 /* timeline */
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
@@ -241,6 +254,7 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
 @media (max-width: 860px) {
   .hero-grid, .grid.two, .chain-detail { grid-template-columns: minmax(0, 1fr); }
   .grid.three { grid-template-columns: minmax(0, 1fr); }
+  .tx-grid { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 520px) {
   .chain { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -555,11 +569,46 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
 <section id="decoder" class="sec live">
   <div class="wrap">
     <header class="sec-head">
-      <p class="eyebrow">07 · Decoder</p>
-      <h2>Decoder live di browser</h2>
-      <p class="sec-lead">Decoder ini adalah terjemahan baris demi baris dari decoder Python proyek: band-pass 400–3600 Hz, mixing ke 0 Hz, keputusan lunak per sampel, pencarian preamble + sync, pelacakan clock ±1 %, lalu CRC-8. Pilih sumber suara, dan setiap frame yang tertangkap muncul di tabel.</p>
+      <p class="eyebrow">07 · Kirim dan decode</p>
+      <h2>Kirim dari laptop, decode di browser</h2>
+      <p class="sec-lead">Panel Pemancar mengirim teks ke Uno lewat kabel USB, lalu Uno memancarkannya lewat FM. Panel Penerima mendengarkan lewat mikrofon dan men-decode-nya. Decodernya terjemahan baris demi baris dari decoder Python proyek: band-pass 400–3600 Hz, mixing ke 0 Hz, keputusan lunak per sampel, pencarian preamble + sync, pelacakan clock ±1 %, lalu CRC-8.</p>
     </header>
+    <div class="panel tx-panel" id="txPanel">
+      <div class="tx-head">
+        <h3>Pemancar: kirim teks dari laptop</h3>
+        <span class="pill idle" id="txConn">belum terhubung</span>
+      </div>
+      <p class="note">Laptop mengirim perintah ke Uno lewat kabel USB (Web Serial, di Chrome atau Edge). Uno menyimpan teksnya di EEPROM, lalu memancarkannya berulang-ulang lewat pemancar FM. Tidak ada kode yang di-upload ulang: firmware sudah mengerti perintah <span class="mono">M &lt;teks&gt;</span>, <span class="mono">S0</span>/<span class="mono">S1</span>/<span class="mono">S2</span>, dan <span class="mono">R300</span>. Saat dihubungkan, Uno bisa restart ±2 detik; pengaturannya tetap tersimpan.</p>
+      <div class="controls">
+        <button type="button" class="btn small primary" id="txConnect">Hubungkan Uno</button>
+        <button type="button" class="btn small" id="txDisconnect" hidden>Putuskan</button>
+      </div>
+      <div class="controls">
+        <span class="ctl"><label for="txText">Teks</label><input type="text" id="txText" value="halo PDSK" maxlength="100" autocomplete="off" spellcheck="false"><span class="note mono" id="txCount">9/100</span></span>
+        <span class="ctl"><label for="txScheme">Skema</label>
+          <select id="txScheme"><option value="0">ASK</option><option value="1" selected>FSK</option><option value="2">DBPSK</option></select></span>
+        <span class="ctl"><label for="txBaud">Bit rate</label>
+          <select id="txBaud"><option>150</option><option selected>300</option><option>600</option><option>1200</option></select></span>
+        <button type="button" class="btn small primary" id="txSend" disabled>Kirim ke Uno</button>
+      </div>
+      <div class="controls">
+        <button type="button" class="btn small" id="txTone" disabled>Nada 1000 Hz (cari frekuensi)</button>
+        <button type="button" class="btn small" id="txData" disabled>Kembali ke data</button>
+        <button type="button" class="btn small" id="txStatus" disabled>Cek status</button>
+      </div>
+      <div class="tx-grid">
+        <dl class="kv">
+          <dt>Mode</dt><dd id="txMode">–</dd>
+          <dt>Teks di Uno</dt><dd id="txNow">–</dd>
+          <dt>Skema</dt><dd id="txSchemeNow">–</dd>
+          <dt>Bit rate</dt><dd id="txBaudNow">–</dd>
+        </dl>
+        <div class="uno-log" id="txLog" role="log" aria-live="polite"><span class="ph">Balasan Uno muncul di sini.</span></div>
+      </div>
+      <div class="mic-hint" id="txHint"></div>
+    </div>
     <div class="panel">
+      <h3>Penerima: decoder live</h3>
       <div class="controls">
         <div class="sources" id="sources" role="group" aria-label="Sumber suara">
           <button type="button" class="btn small" data-src="mic" aria-pressed="false">Mikrofon</button>
@@ -624,8 +673,8 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
         <summary>Cara demo dengan pemancar dan radio HP</summary>
         <ol>
           <li>Colokkan kabel audio pemancar ke jack di breadboard, nyalakan pemancar, jauhkan ±1 m dari Uno.</li>
-          <li>Kirim pesan dari Uno: <span class="mono">M halo PDSK</span>, skema <span class="mono">S0</span> / <span class="mono">S1</span> / <span class="mono">S2</span>, bit rate <span class="mono">R300</span>.</li>
-          <li>Setel radio FM HP ke frekuensi pemancar sampai bunyi data terdengar jelas; nyalakan speaker.</li>
+          <li>Di panel <b>Pemancar</b>: klik <b>Hubungkan Uno</b>, pilih port Arduino (biasanya COM3), ketik teks, pilih skema dan bit rate, lalu <b>Kirim ke Uno</b>. Tanpa Chrome/Edge, perintah yang sama bisa diketik di Serial Monitor Arduino IDE: <span class="mono">M halo PDSK</span>, <span class="mono">S0</span> / <span class="mono">S1</span> / <span class="mono">S2</span>, <span class="mono">R300</span>.</li>
+          <li>Setel radio FM HP ke frekuensi pemancar sampai bunyi data terdengar jelas; nyalakan speaker. Kalau susah dicari, klik <b>Nada 1000 Hz</b> dulu, lalu <b>Kembali ke data</b>.</li>
           <li>Dekatkan speaker HP ke mikrofon laptop, tekan <b>Mikrofon</b>, dan izinkan akses mikrofon.</li>
           <li>Frame yang tertangkap muncul di tabel. Kalau semuanya gagal, cek frekuensi radio (pemancar bisa bergeser) dan kecilkan volume HP bila suaranya pecah.</li>
         </ol>
@@ -718,3 +767,4 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
 <script src="fmcore.js"></script>
 <script src="decoder.js"></script>
 <script src="app.js"></script>
+<script src="unolink.js"></script>

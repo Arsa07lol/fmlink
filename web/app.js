@@ -632,6 +632,15 @@
       const td = document.createElement("td");
       if (i === 1 && c) { const sp = document.createElement("span"); sp.className = "pill s-" + c; sp.textContent = c; td.appendChild(sp); }
       else if (i === 3) { const sp = document.createElement("span"); sp.className = "pill " + (f.crcOk ? "ok" : "bad"); sp.textContent = c; td.appendChild(sp); }
+      else if (i === 2) {
+        td.textContent = c;
+        const sent = window.FMLinkTx && window.FMLinkTx.sent;      // text the Pemancar panel put on the Uno
+        if (isText && f.crcOk && sent && f.text === sent) {
+          const sp = document.createElement("span"); sp.className = "pill info"; sp.textContent = "cocok";
+          sp.title = "Sama dengan teks yang dikirim dari panel Pemancar";
+          td.append(" ", sp);
+        }
+      }
       else td.textContent = c;
       if (i >= 4) td.className = "num";
       tr.appendChild(td);
