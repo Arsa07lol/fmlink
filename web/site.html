@@ -215,6 +215,14 @@ td.num, th.num { text-align: right; font-family: var(--f-mono); font-variant-num
 .uno-log .ph { color: var(--faint); }
 .pill.idle { background: color-mix(in srgb, var(--faint) 22%, transparent); color: var(--muted); }
 
+/* receiver panel (RDA5807M over the same USB link) */
+.rx-panel { margin-bottom: 18px; border-top: 3px solid var(--cyan); }
+.rx-panel > .note { margin-bottom: 4px; max-width: 78ch; }
+.rx-meter .bar { height: 10px; }
+.rx-meter .bar i { background: var(--cyan); }
+.rx-panel .btn[aria-pressed="true"] { border-color: var(--cyan); background: color-mix(in srgb, var(--cyan) 16%, var(--panel-2)); }
+input[type="number"] { font: 0.92rem var(--f-mono); color: var(--text); background: var(--ink); border: 1px solid var(--line-2); border-radius: 7px; padding: 7px 10px; width: 96px; }
+
 /* timeline */
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
 .chips button { font: 500 0.84rem var(--f-body); color: var(--muted); background: var(--panel); border: 1px solid var(--line-2); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
@@ -294,7 +302,8 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
       <ul class="status">
         <li class="st ok"><span class="dot"></span><span><b>Pemancar FM</b> sudah di udara, sekitar 102–104 MHz</span></li>
         <li class="st ok"><span class="dot"></span><span><b>Link ujung ke ujung</b> berhasil untuk FSK, ASK, dan DBPSK</span></li>
-        <li class="st warn"><span class="dot"></span><span><b>Penerima RDA5807M</b> menunggu modul pengganti</span></li>
+        <li class="st ok"><span class="dot"></span><span><b>Penerima RDA5807M</b> modul baru menangkap pemancar (RSSI 107 dari 127)</span></li>
+        <li class="st warn"><span class="dot"></span><span><b>Suara RDA ke laptop</b> belum disambung; decode masih lewat radio HP</span></li>
       </ul>
       <div class="hero-cta">
         <a class="btn primary" href="#decoder">Coba decoder live</a>
@@ -525,7 +534,7 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
     <header class="sec-head">
       <p class="eyebrow">06 · Penerima</p>
       <h2>Menangkap kembali sinyal FM</h2>
-      <p class="sec-lead">Penerima utama adalah chip RDA5807M yang dikendalikan Uno lewat I2C. Sambil menunggu modul pengganti, radio FM di HP dipakai sebagai penerima sementara.</p>
+      <p class="sec-lead">Penerima utama adalah chip RDA5807M yang dikendalikan Uno lewat I2C. Modul pertama rusak di bagian RF; modul pengganti (26 Nov) menangkap pemancar dengan RSSI 107. Suaranya belum disambung ke laptop, jadi decode teks masih memakai radio FM di HP.</p>
     </header>
     <div class="grid three">
       <div class="panel">
@@ -538,8 +547,8 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
         </dl>
       </div>
       <div class="panel">
-        <h3>Radio FM di HP (sementara)</h3>
-        <p class="note">Earphone dicolok sebagai antena, suara keluar lewat speaker, lalu ditangkap mikrofon laptop. Kurang rapi untuk pengukuran resmi, tapi cukup untuk membuktikan link berjalan dari ujung ke ujung.</p>
+        <h3>Radio FM di HP</h3>
+        <p class="note">Earphone dicolok sebagai antena, suara keluar lewat speaker, lalu ditangkap mikrofon laptop. Dipakai untuk decode dan untuk demo yang bisa didengar. Kurang rapi untuk pengukuran resmi, tapi cukup untuk membuktikan link berjalan dari ujung ke ujung.</p>
       </div>
       <div class="panel">
         <h3>RTL-SDR + SDR++ (rencana)</h3>
@@ -561,7 +570,7 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
           </tbody>
         </table>
       </div>
-      <p class="note" style="margin-top:10px">Kesimpulan: firmware dan I2C beres, tapi bagian RF modul ini rusak. Pemancar dari jarak 10–30 cm cuma terbaca RSSI ±10, padahal modul sehat seharusnya 50 ke atas. Modul baru sudah dibeli.</p>
+      <p class="note" style="margin-top:10px">Kesimpulan: firmware dan I2C beres, tapi bagian RF modul ini rusak. Pemancar dari jarak 10–30 cm cuma terbaca RSSI ±10, padahal modul sehat seharusnya 50 ke atas. Modul pengganti (26 Nov) membaca 107–108 di frekuensi pemancar dan 28–55 di frekuensi lain.</p>
     </div>
   </div>
 </section>
@@ -571,7 +580,7 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
     <header class="sec-head">
       <p class="eyebrow">07 · Kirim dan decode</p>
       <h2>Kirim dari laptop, decode di browser</h2>
-      <p class="sec-lead">Panel Pemancar mengirim teks ke Uno lewat kabel USB, lalu Uno memancarkannya lewat FM. Panel Penerima mendengarkan lewat mikrofon dan men-decode-nya. Decodernya terjemahan baris demi baris dari decoder Python proyek: band-pass 400–3600 Hz, mixing ke 0 Hz, keputusan lunak per sampel, pencarian preamble + sync, pelacakan clock ±1 %, lalu CRC-8.</p>
+      <p class="sec-lead">Panel Pemancar mengirim teks ke Uno lewat kabel USB, lalu Uno memancarkannya lewat FM. Panel Penerima RDA menunjukkan modul RDA5807M menangkap pemancar itu, dengan kuat sinyal yang bergerak live. Decoder di bawahnya mendengarkan lewat mikrofon dan men-decode teksnya. Decodernya terjemahan baris demi baris dari decoder Python proyek: band-pass 400–3600 Hz, mixing ke 0 Hz, keputusan lunak per sampel, pencarian preamble + sync, pelacakan clock ±1 %, lalu CRC-8.</p>
     </header>
     <div class="panel tx-panel" id="txPanel">
       <div class="tx-head">
@@ -607,8 +616,32 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
       </div>
       <div class="mic-hint" id="txHint"></div>
     </div>
+    <div class="panel rx-panel" id="rdaPanel">
+      <div class="tx-head">
+        <h3>Penerima: modul RDA5807M</h3>
+        <span class="pill idle" id="rdaConn">belum terhubung</span>
+      </div>
+      <p class="note">Uno yang sama juga mengendalikan penerima FM RDA5807M lewat I2C. Kuat sinyal (RSSI, 0–127) dibaca dari register chip 10 kali per detik. Pemancar tertangkap kalau angkanya jauh di atas frekuensi kosong; uji 26 Nov: 107 di frekuensi pemancar, 28–55 di frekuensi lain. Suara RDA belum disambung ke laptop, jadi decode di bawah masih lewat radio HP dan mikrofon.</p>
+      <div class="stats">
+        <div class="stat"><div class="k">frekuensi RDA</div><div class="v" id="rdaFreq">–</div></div>
+        <div class="stat"><div class="k">kuat sinyal (RSSI)</div><div class="v" id="rdaRssi">–</div></div>
+        <div class="stat"><div class="k">volume RDA</div><div class="v" id="rdaVol">–</div></div>
+      </div>
+      <div class="meter rx-meter"><div class="k">RSSI 0–127</div><div class="bar"><i id="rdaBar"></i></div></div>
+      <div class="vis-label" style="margin-top:12px"><span>kuat sinyal 30 detik terakhir</span><span id="rdaSparkLbl">Live mati</span></div>
+      <canvas class="plot" id="rdaSpark" style="height:90px"></canvas>
+      <div class="controls" style="margin-top:14px">
+        <button type="button" class="btn small" id="rdaLive" aria-pressed="false" disabled>Live: mati</button>
+        <span class="ctl"><label for="rdaFreqIn">Frekuensi (MHz)</label><input type="number" id="rdaFreqIn" min="87.5" max="108" step="0.1" value="102.6"></span>
+        <button type="button" class="btn small" id="rdaTune" disabled>Setel</button>
+        <button type="button" class="btn small primary" id="rdaFind" disabled>Cari pemancar (±1.5 MHz)</button>
+      </div>
+      <div class="vis-label"><span>hasil cari: kuat sinyal per frekuensi</span><span id="rdaSweepLbl"></span></div>
+      <canvas class="plot" id="rdaSweep" style="height:110px"></canvas>
+      <div class="mic-hint" id="rdaHint"></div>
+    </div>
     <div class="panel">
-      <h3>Penerima: decoder live</h3>
+      <h3>Decoder live (mikrofon laptop)</h3>
       <div class="controls">
         <div class="sources" id="sources" role="group" aria-label="Sumber suara">
           <button type="button" class="btn small" data-src="mic" aria-pressed="false">Mikrofon</button>
@@ -674,6 +707,7 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
         <ol>
           <li>Colokkan kabel audio pemancar ke jack di breadboard, nyalakan pemancar, jauhkan ±1 m dari Uno.</li>
           <li>Di panel <b>Pemancar</b>: klik <b>Hubungkan Uno</b>, pilih port Arduino (biasanya COM3), ketik teks, pilih skema dan bit rate, lalu <b>Kirim ke Uno</b>. Tanpa Chrome/Edge, perintah yang sama bisa diketik di Serial Monitor Arduino IDE: <span class="mono">M halo PDSK</span>, <span class="mono">S0</span> / <span class="mono">S1</span> / <span class="mono">S2</span>, <span class="mono">R300</span>.</li>
+          <li>Di panel <b>Penerima RDA</b>: klik <b>Cari pemancar</b>. RDA disetel ke frekuensi paling kuat, dan bar kuat sinyal naik saat pemancar menyala, turun saat dimatikan.</li>
           <li>Setel radio FM HP ke frekuensi pemancar sampai bunyi data terdengar jelas; nyalakan speaker. Kalau susah dicari, klik <b>Nada 1000 Hz</b> dulu, lalu <b>Kembali ke data</b>.</li>
           <li>Dekatkan speaker HP ke mikrofon laptop, tekan <b>Mikrofon</b>, dan izinkan akses mikrofon.</li>
           <li>Frame yang tertangkap muncul di tabel. Kalau semuanya gagal, cek frekuensi radio (pemancar bisa bergeser) dan kecilkan volume HP bila suaranya pecah.</li>

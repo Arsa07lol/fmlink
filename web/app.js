@@ -933,6 +933,9 @@
     { d: "24 Nov", k: "fail", t: "Frekuensi pemancar bergeser", b: "±30 menit kemudian pemancar pindah ke 102.4 MHz. Tes decode pertama cuma merekam desis.", f: "Frekuensi dicari ulang di radio, pemancar tidak disentuh lagi selama tes." },
     { d: "24 Nov", k: "ok", t: "Link data ujung ke ujung", b: "Teks \"halo PDSK\" dikirim Uno dengan FSK, ASK, dan DBPSK, lewat pemancar FM, radio HP, speaker, dan mikrofon laptop, lalu ter-decode dengan CRC OK: FSK 6 dari 8 frame, ASK 14 dari 17, DBPSK 12 dari 16." },
     { d: "24 Nov", k: "ok", t: "Decoder juga jalan di browser", b: "Decoder Python diterjemahkan ke JavaScript untuk halaman ini. Pada ketiga rekaman, hasilnya sama persis dengan Python." },
+    { d: "25 Nov", k: "ok", t: "Teks diganti langsung dari halaman ini", b: "Panel Pemancar mengirim perintah ke Uno lewat kabel USB (Web Serial). Teks, skema, dan bit rate bisa diganti tanpa upload ulang dan tanpa Arduino IDE." },
+    { d: "26 Nov", k: "fail", t: "Antena pemancar lupa dipasang", b: "Modul RDA baru menyala, tapi di frekuensi pemancar kuat sinyalnya hampir sama dengan frekuensi kosong, dan nada di radio HP pelan.", f: "Setelah antena dipasang, RDA membaca RSSI 107–108 di frekuensi pemancar, sedangkan frekuensi lain 28–55." },
+    { d: "26 Nov", k: "ok", t: "Modul RDA baru menangkap pemancar", b: "Daya pertama lewat resistor pengaman: I2C menjawab di 0x10 dan 0x11, ID chip 5804, radio OK. Kuat sinyal baru stabil ±0.5 detik setelah pindah frekuensi, jadi tombol Cari pemancar di halaman ini menunggu dulu sebelum membaca." },
   ];
   function renderJournal(filter) {
     const label = { ok: ["ok", "berhasil"], fail: ["bad", "gagal → perbaikan"], decision: ["warn", "keputusan"] };
