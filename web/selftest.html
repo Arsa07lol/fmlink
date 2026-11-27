@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <title>FM Link decoder selftest</title>
@@ -48,7 +48,7 @@
 
   log("");
   log("== real recordings (phone FM radio -> laptop mic, 24 Nov) ==");
-  const files = [["rekaman_fsk.wav", "FSK", 6, 2], ["rekaman_ask.wav", "ASK", 14, 3], ["rekaman_dbpsk.wav", "DBPSK", 12, 4]];
+  const files = [["recording_fsk.wav", "FSK", 6, 2], ["recording_ask.wav", "ASK", 14, 3], ["recording_dbpsk.wav", "DBPSK", 12, 4]];
   for (const [name, want, pyOk, pyBad] of files) {
     try {
       const res = await fetch("audio/" + name);

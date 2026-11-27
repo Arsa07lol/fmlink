@@ -9,7 +9,7 @@ web = pathlib.Path(__file__).resolve().parent.parent / "web"
 src = (web / "site.html").read_text(encoding="utf-8")
 cut = src.index("</style>") + len("</style>")
 head, body = src[:cut], src[cut:]
-html = ('<!doctype html>\n<html lang="id">\n<head>\n<meta charset="utf-8">\n'
+html = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
         + head + "\n</head>\n<body>" + body + "\n</body>\n</html>\n")
 (web / "index.html").write_text(html, encoding="utf-8")

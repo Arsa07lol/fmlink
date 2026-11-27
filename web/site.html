@@ -1,6 +1,7 @@
 <title>FM Multi-Mod Link</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Data digital ASK, FSK, dan DBPSK dikirim lewat kanal radio FM dengan Arduino Uno, lalu di-decode lagi di laptop dan di browser.">
+<meta name="description" content="Digital data sent as ASK, FSK and DBPSK audio tones over an FM radio link with an Arduino Uno, then decoded again on a laptop and in the browser. By Radithya Arsa Wibowo.">
+<meta name="author" content="Radithya Arsa Wibowo">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -272,73 +273,76 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
   .plan li .pill { grid-column: 2; justify-self: start; }
   .brand span.txt { display: none; }
 }
+.byline { color: var(--muted); font-size: 0.95rem; }
+.byline b { color: var(--text); font-weight: 600; }
 </style>
 
 <header class="topbar">
   <div class="wrap topbar-inner">
-    <a class="brand" href="#beranda"><span class="brand-mark" aria-hidden="true"></span><span class="txt">FM Multi-Mod Link</span></a>
-    <nav class="nav" aria-label="Bagian halaman">
-      <a href="#alur">Alur</a>
+    <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"></span><span class="txt">FM Multi-Mod Link</span></a>
+    <nav class="nav" aria-label="Page sections">
+      <a href="#flow">Flow</a>
       <a href="#frame">Frame</a>
-      <a href="#modulasi">Modulasi</a>
+      <a href="#modulation">Modulation</a>
       <a href="#uno">Uno</a>
       <a href="#fm">FM</a>
-      <a href="#kanal">Kanal</a>
-      <a href="#penerima">Penerima</a>
-      <a href="#decoder" class="nav-live">Decoder live</a>
-      <a href="#jurnal">Jurnal</a>
-      <a href="#hasil">Hasil</a>
+      <a href="#channel">Channel</a>
+      <a href="#receiver">Receiver</a>
+      <a href="#decoder" class="nav-live">Live demo</a>
+      <a href="#journal">Build log</a>
+      <a href="#results">Results</a>
     </nav>
   </div>
 </header>
 
 <main>
-<section id="beranda" class="hero">
+<section id="top" class="hero">
   <div class="wrap hero-grid">
     <div class="hero-copy">
-      <p class="eyebrow">Proyek Dasar Sistem Komunikasi (PDSK)</p>
+      <p class="eyebrow">Digital communications over FM radio</p>
       <h1>FM Multi-Mod Link</h1>
-      <p class="lead">Data digital diubah jadi nada audio dengan modulasi ASK, FSK, atau DBPSK oleh Arduino Uno, dipancarkan lewat pemancar FM, ditangkap lagi oleh penerima FM, lalu didemodulasi dan dicek CRC-nya di laptop. Halaman ini menunjukkan setiap tahapnya dan bisa men-decode sinyalnya sendiri.</p>
+      <p class="byline">Built by <b>Radithya Arsa Wibowo</b> · Fundamentals of Communication Systems, PENS (Surabaya, Indonesia)</p>
+      <p class="lead">An Arduino Uno turns digital data into audio tones with ASK, FSK or DBPSK, an FM transmitter puts them on the air, an FM receiver picks them up again, and a laptop demodulates them and checks the CRC. This page walks through every stage and can decode the signal itself.</p>
       <ul class="status">
-        <li class="st ok"><span class="dot"></span><span><b>Pemancar FM</b> sudah di udara, sekitar 102–104 MHz</span></li>
-        <li class="st ok"><span class="dot"></span><span><b>Link ujung ke ujung</b> berhasil untuk FSK, ASK, dan DBPSK</span></li>
-        <li class="st ok"><span class="dot"></span><span><b>Penerima RDA5807M</b> modul baru menangkap pemancar (RSSI 107 dari 127)</span></li>
-        <li class="st warn"><span class="dot"></span><span><b>Suara RDA ke laptop</b> belum disambung; decode masih lewat radio HP</span></li>
+        <li class="st ok"><span class="dot"></span><span><b>FM transmitter</b> on the air, around 102–104 MHz</span></li>
+        <li class="st ok"><span class="dot"></span><span><b>End-to-end link</b> works for FSK, ASK and DBPSK</span></li>
+        <li class="st ok"><span class="dot"></span><span><b>RDA5807M receiver</b>: the new module picks up the transmitter (RSSI 107 of 127)</span></li>
+        <li class="st warn"><span class="dot"></span><span><b>RDA audio to the laptop</b> not wired yet; decoding still goes through a phone FM radio</span></li>
       </ul>
       <div class="hero-cta">
-        <a class="btn primary" href="#decoder">Coba decoder live</a>
-        <a class="btn" href="#alur">Lihat alur sinyal</a>
+        <a class="btn primary" href="#decoder">Try the live demo</a>
+        <a class="btn" href="#flow">See the signal flow</a>
       </div>
     </div>
     <figure class="scope-card">
       <figcaption class="scope-head">
-        <span>Audio yang dibuat Uno · teks "halo PDSK"</span>
-        <span class="seg" id="heroSeg" role="group" aria-label="Pilih modulasi">
+        <span>Audio made by the Uno · text "halo PDSK"</span>
+        <span class="seg" id="heroSeg" role="group" aria-label="Choose the modulation">
           <button type="button" data-s="ASK" aria-pressed="false">ASK</button>
           <button type="button" data-s="FSK" aria-pressed="true">FSK</button>
           <button type="button" data-s="DBPSK" aria-pressed="false">DBPSK</button>
         </span>
       </figcaption>
-      <canvas id="heroScope" aria-label="Bentuk gelombang audio yang bergeser, dengan nilai bit di atasnya"></canvas>
+      <canvas id="heroScope" aria-label="Scrolling audio waveform with the bit values above it"></canvas>
       <div class="scope-foot mono" id="heroFoot">bit 0 · preamble</div>
     </figure>
   </div>
   <div class="wrap spec-row mono">
-    <span><b>3</b> modulasi</span>
+    <span><b>3</b> modulations</span>
     <span><b>150–1200</b> baud</span>
     <span>CRC-8 poly <b>0x07</b></span>
-    <span>PRBS-9 untuk <b>BER</b></span>
+    <span>PRBS-9 for <b>BER</b></span>
     <span>DDS <b>31 250 Hz</b></span>
-    <span>PWM <b>62.5 kHz</b> di pin D3</span>
+    <span>PWM <b>62.5 kHz</b> on pin D3</span>
   </div>
 </section>
 
-<section id="alur" class="sec">
+<section id="flow" class="sec">
   <div class="wrap">
     <header class="sec-head">
-      <p class="eyebrow">Gambaran besar</p>
-      <h2>Alur sinyal, dari teks sampai teks lagi</h2>
-      <p class="sec-lead">Sembilan tahap yang dilewati satu pesan. Klik tiap tahap untuk melihat apa yang terjadi di sana dan angka pentingnya.</p>
+      <p class="eyebrow">Big picture</p>
+      <h2>Signal flow, from text back to text</h2>
+      <p class="sec-lead">The nine stages one message goes through. Click a stage to see what happens there and the numbers that matter.</p>
     </header>
     <ol class="chain" id="chain"></ol>
     <div class="chain-detail" id="chainDetail" aria-live="polite"></div>
@@ -349,14 +353,14 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
   <div class="wrap">
     <header class="sec-head">
       <p class="eyebrow">01 · Data</p>
-      <h2>Frame: bungkus untuk setiap pesan</h2>
-      <p class="sec-lead">Penerima tidak tahu kapan pesan mulai. Karena itu setiap pesan dibungkus: ada pola pembuka untuk menyamakan ritme bit, kata sinkron untuk menandai awal, panjang data, isi, dan CRC untuk mengecek apakah ada bit yang rusak. Ketik teks di bawah dan lihat frame-nya berubah.</p>
+      <h2>Frame: the envelope around every message</h2>
+      <p class="sec-lead">The receiver doesn't know when a message starts, so every message is wrapped: a preamble to lock onto the bit timing, a sync word to mark the start, the data length, the payload, and a CRC that tells whether any bit was corrupted. Type below and watch the frame change.</p>
     </header>
     <div class="panel">
       <div class="controls">
-        <span class="ctl"><label for="frameText">Teks</label><input type="text" id="frameText" value="halo PDSK" maxlength="100" autocomplete="off"></span>
-        <span class="seg" id="frameKind" role="group" aria-label="Jenis isi">
-          <button type="button" data-k="TEXT" aria-pressed="true">Teks</button>
+        <span class="ctl"><label for="frameText">Text</label><input type="text" id="frameText" value="halo PDSK" maxlength="100" autocomplete="off"></span>
+        <span class="seg" id="frameKind" role="group" aria-label="Payload type">
+          <button type="button" data-k="TEXT" aria-pressed="true">Text</button>
           <button type="button" data-k="PRBS" aria-pressed="false">PRBS-9</button>
         </span>
         <span class="ctl"><label for="frameBaud">Bit rate</label>
@@ -368,64 +372,64 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
         <span><i class="f-payload"></i>payload</span><span><i class="f-crc"></i>CRC-8</span><span><i class="f-idle"></i>idle</span>
       </div>
       <div class="stats" id="frameStats"></div>
-      <div class="vis-label"><span>bit yang dikirim (MSB dulu), kotak terisi = 1</span><span id="frameBitCount"></span></div>
+      <div class="vis-label"><span>bits sent (MSB first), filled box = 1</span><span id="frameBitCount"></span></div>
       <canvas class="plot" id="frameBits" style="height:120px"></canvas>
     </div>
     <div class="fields">
-      <div><b>preamble · AA AA AA AA</b>32 bit 1010… supaya penerima bisa mengunci ritme bit.</div>
-      <div><b>sync · 2D D4</b>Kata sinkron 16 bit. Decoder mencari 8 bit preamble terakhir + sync ini (24 bit, boleh salah 1).</div>
-      <div><b>type · 3C / C3</b>3C = teks, C3 = PRBS. Keduanya beda di 8 bit, jadi masih terbaca walau 3 bit rusak.</div>
-      <div><b>len</b>Jumlah byte isi, 0–100 (RAM Uno cuma 2 KB).</div>
-      <div><b>payload</b>Isi pesan: teks Latin-1 atau 64 byte PRBS-9 untuk mengukur BER.</div>
-      <div><b>CRC-8 · poly 0x07</b>Dihitung dari type, len, dan payload. Kalau CRC terima ≠ CRC hitung, frame dibuang.</div>
-      <div><b>idle · FF FF FF FF</b>32 bit jeda di antara frame.</div>
+      <div><b>preamble · AA AA AA AA</b>32 bits of 1010… so the receiver can lock onto the bit timing.</div>
+      <div><b>sync · 2D D4</b>16-bit sync word. The decoder looks for the last 8 preamble bits plus this word (24 bits, one error allowed).</div>
+      <div><b>type · 3C / C3</b>3C = text, C3 = PRBS. They differ in all 8 bits, so the type still reads correctly with 3 bit errors.</div>
+      <div><b>len</b>Number of payload bytes, 0–100 (the Uno has only 2 KB of RAM).</div>
+      <div><b>payload</b>The message: Latin-1 text, or 64 bytes of PRBS-9 for measuring the BER.</div>
+      <div><b>CRC-8 · poly 0x07</b>Computed over type, len and payload. If the received CRC doesn't match the computed one, the frame is dropped.</div>
+      <div><b>idle · FF FF FF FF</b>32 bits of gap between frames.</div>
     </div>
   </div>
 </section>
 
-<section id="modulasi" class="sec">
+<section id="modulation" class="sec">
   <div class="wrap">
     <header class="sec-head">
-      <p class="eyebrow">02 · Modulasi</p>
-      <h2>Satu bit, tiga cara menyuarakannya</h2>
-      <p class="sec-lead">Bit tidak bisa dikirim lewat radio FM begitu saja, karena FM membawa suara. Jadi tiap bit diubah jadi nada audio. Gelombang di bawah adalah sampel yang persis sama dengan buatan Uno (DDS 31 250 Hz, tabel sinus 8 bit).</p>
+      <p class="eyebrow">02 · Modulation</p>
+      <h2>One bit, three ways to make it audible</h2>
+      <p class="sec-lead">Bits can't go over an FM radio as they are, because FM carries sound. So every bit becomes an audio tone. The waveform below uses exactly the samples the Uno makes (31 250 Hz DDS, 8-bit sine table).</p>
     </header>
     <div class="panel">
       <div class="controls">
-        <span class="seg" id="modSeg" role="group" aria-label="Modulasi">
+        <span class="seg" id="modSeg" role="group" aria-label="Modulation">
           <button type="button" data-s="ASK" aria-pressed="false">ASK</button>
           <button type="button" data-s="FSK" aria-pressed="true">FSK</button>
           <button type="button" data-s="DBPSK" aria-pressed="false">DBPSK</button>
         </span>
         <span class="ctl"><label for="modBaud">Bit rate</label>
           <select id="modBaud"><option>150</option><option selected>300</option><option>600</option><option>1200</option></select></span>
-        <span class="ctl"><label for="modWin">Bagian</label>
+        <span class="ctl"><label for="modWin">Part</label>
           <select id="modWin">
-            <option value="26">akhir preamble + awal sync</option>
-            <option value="44">akhir sync + type</option>
-            <option value="64">awal payload ("ha")</option>
+            <option value="26">end of preamble + start of sync</option>
+            <option value="44">end of sync + type</option>
+            <option value="64">start of payload ("ha")</option>
           </select></span>
-        <button type="button" class="btn small" id="modPlay">Putar suaranya</button>
+        <button type="button" class="btn small" id="modPlay">Play it</button>
         <button type="button" class="btn small" id="modStop" disabled>Stop</button>
       </div>
-      <canvas class="plot" id="modScope" style="height:230px" aria-label="Gelombang modulasi untuk 24 bit"></canvas>
+      <canvas class="plot" id="modScope" style="height:230px" aria-label="Modulated waveform over 12 bits"></canvas>
       <p class="note" id="modNote" style="margin-top:10px"></p>
     </div>
     <div class="grid three" style="margin-top:18px">
       <div class="panel scheme-card ASK">
         <h3>ASK · Amplitude Shift Keying</h3>
-        <p class="rule">1 → nada 1800 Hz · 0 → diam</p>
-        <p>Paling sederhana: nada dinyalakan dan dimatikan. Kelemahannya, noise dan perubahan volume bisa dikira bit 1.</p>
+        <p class="rule">1 → 1800 Hz tone · 0 → silence</p>
+        <p>The simplest: the tone switches on and off. The weakness: noise and volume changes can be mistaken for a 1.</p>
       </div>
       <div class="panel scheme-card FSK">
         <h3>FSK · Frequency Shift Keying</h3>
         <p class="rule">1 → 1200 Hz · 0 → 2200 Hz</p>
-        <p>Selalu ada nada, cuma frekuensinya berganti, dan fasanya tetap nyambung. Decoder membandingkan energi di 1200 dan 2200 Hz, jadi tidak peduli keras-pelannya suara.</p>
+        <p>There is always a tone; only its frequency changes, and the phase stays continuous. The decoder compares the energy at 1200 and 2200 Hz, so loudness doesn't matter.</p>
       </div>
       <div class="panel scheme-card DBPSK">
         <h3>DBPSK · Differential BPSK</h3>
-        <p class="rule">0 → fasa dibalik 180° · 1 → fasa tetap</p>
-        <p>Nada 1800 Hz terus, yang berubah fasanya. Decoder membandingkan tiap bit dengan bit sebelumnya, jadi tidak butuh fasa acuan.</p>
+        <p class="rule">0 → phase flipped 180° · 1 → phase kept</p>
+        <p>A steady 1800 Hz tone whose phase changes. The decoder compares each bit with the one before, so it needs no phase reference.</p>
       </div>
     </div>
   </div>
@@ -434,27 +438,27 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
 <section id="uno" class="sec">
   <div class="wrap">
     <header class="sec-head">
-      <p class="eyebrow">03 · Di dalam Arduino Uno</p>
-      <h2>DDS, PWM, lalu filter RC</h2>
-      <p class="sec-lead">Uno tidak punya DAC. Jadi Timer1 memanggil interrupt 31 250 kali per detik. Tiap kali, akumulator fasa 32 bit ditambah, 8 bit teratasnya jadi indeks tabel sinus, dan hasilnya dipasang sebagai duty cycle PWM 62.5 kHz di pin D3. Filter RC dua tingkat lalu meratakan pulsa PWM jadi gelombang audio.</p>
+      <p class="eyebrow">03 · Inside the Arduino Uno</p>
+      <h2>DDS, PWM, then an RC filter</h2>
+      <p class="sec-lead">The Uno has no DAC. So Timer1 fires an interrupt 31 250 times a second. Each time, a 32-bit phase accumulator advances, its top 8 bits index a sine table, and the result becomes the duty cycle of a 62.5 kHz PWM on pin D3. A two-stage RC filter then smooths the PWM pulses into an audio wave.</p>
     </header>
     <div class="grid two">
       <div class="panel">
-        <h3>Kalkulator DDS</h3>
+        <h3>DDS calculator</h3>
         <div class="controls">
-          <span class="ctl"><label for="ddsF">Frekuensi</label><input type="range" id="ddsF" min="100" max="4000" step="10" value="1200"></span>
+          <span class="ctl"><label for="ddsF">Frequency</label><input type="range" id="ddsF" min="100" max="4000" step="10" value="1200"></span>
           <span class="mono" id="ddsFv">1200 Hz</span>
         </div>
         <dl class="kv" id="ddsKv"></dl>
-        <div class="vis-label" style="margin-top:12px"><span>sampel DDS → pulsa PWM → keluaran filter (1.28 ms)</span></div>
+        <div class="vis-label" style="margin-top:12px"><span>DDS samples → PWM pulses → filter output (1.28 ms)</span></div>
         <canvas class="plot" id="ddsPlot" style="height:250px"></canvas>
       </div>
       <div class="panel">
-        <h3>Respon filter RC + de-emphasis</h3>
-        <p class="note">R1 = R2 = 1.5 kΩ, C1 = C2 = 10 nF, dibebani trimpot 10 kΩ. Tiap tingkat sendiri fc = 10.6 kHz, tapi dua tingkat saling membebani, jadi gabungannya −3 dB sekitar 5 kHz. Penerima FM menambah de-emphasis 50 µs.</p>
+        <h3>RC filter response + de-emphasis</h3>
+        <p class="note">R1 = R2 = 1.5 kΩ, C1 = C2 = 10 nF, loaded by a 10 kΩ trimmer. Each stage alone has fc = 10.6 kHz, but the two stages load each other, so together they are −3 dB at about 5 kHz. The FM receiver adds 50 µs de-emphasis.</p>
         <canvas class="plot" id="filterPlot" style="height:250px;margin-top:10px"></canvas>
         <div class="tbl-wrap" style="margin-top:10px">
-          <table id="filterTbl"><thead><tr><th>Frekuensi</th><th class="num">Filter Uno</th><th class="num">+ de-emphasis</th></tr></thead><tbody></tbody></table>
+          <table id="filterTbl"><thead><tr><th>Frequency</th><th class="num">Uno filter</th><th class="num">+ de-emphasis</th></tr></thead><tbody></tbody></table>
         </div>
       </div>
     </div>
@@ -464,64 +468,64 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
 <section id="fm" class="sec">
   <div class="wrap">
     <header class="sec-head">
-      <p class="eyebrow">04 · Pemancar FM</p>
-      <h2>Nada audio menggeser frekuensi pembawa</h2>
-      <p class="sec-lead">Pemancar kit S-151 (osilator C828 + penguat C930, baterai 9 V) menerima audio dari Uno lewat colokan 3.5 mm. Makin besar tegangan audio, makin jauh frekuensi pembawa bergeser. Besar geseran ini (deviasi) diatur dengan trimpot 10 kΩ.</p>
+      <p class="eyebrow">04 · FM transmitter</p>
+      <h2>The audio tone pushes the carrier frequency around</h2>
+      <p class="sec-lead">An S-151 kit transmitter (C828 oscillator + C930 amplifier, 9 V battery) takes the Uno's audio through a 3.5 mm plug. The larger the audio voltage, the further the carrier frequency moves. This shift, the deviation, is set with a 10 kΩ trimmer.</p>
     </header>
     <div class="grid two">
       <div class="panel">
         <div class="controls">
-          <span class="ctl"><label for="fmDev">Deviasi</label><input type="range" id="fmDev" min="5" max="100" step="5" value="40"></span>
+          <span class="ctl"><label for="fmDev">Deviation</label><input type="range" id="fmDev" min="5" max="100" step="5" value="40"></span>
           <span class="mono" id="fmDevV">40 kHz</span>
-          <span class="seg" id="fmTone" role="group" aria-label="Nada audio">
+          <span class="seg" id="fmTone" role="group" aria-label="Audio tone">
             <button type="button" data-f="1200" aria-pressed="true">1200 Hz</button>
             <button type="button" data-f="1800" aria-pressed="false">1800 Hz</button>
             <button type="button" data-f="2200" aria-pressed="false">2200 Hz</button>
           </span>
         </div>
-        <canvas class="plot" id="fmPlot" style="height:230px" aria-label="Nada audio dan gelombang FM yang rapat-renggang"></canvas>
+        <canvas class="plot" id="fmPlot" style="height:230px" aria-label="Audio tone and the FM wave bunching up and spreading out"></canvas>
         <dl class="kv" id="fmKv" style="margin-top:12px"></dl>
       </div>
       <div class="panel">
-        <h3>Yang kami amati di pemancar</h3>
+        <h3>Measured at the transmitter</h3>
         <dl class="kv">
-          <dt>Frekuensi awal</dt><dd>104.2 MHz (24 Nov, ditangkap radio FM HP)</dd>
-          <dt>±30 menit kemudian</dt><dd>102.4 MHz</dd>
-          <dt>Drift vs baterai</dt><dd>±0.93 MHz per volt (9 V → 6 V: 106.4 → 103.6 MHz)</dd>
-          <dt>Jangkauan (antena 75 cm)</dt><dd>jernih ≤ 10 m, putus-putus 30–35 m</dd>
-          <dt>Jarak ke Uno</dt><dd>≥ 1 m; lebih dekat mengganggu I2C</dd>
+          <dt>Starting frequency</dt><dd>104.2 MHz (24 Nov, on a phone FM radio)</dd>
+          <dt>About 30 minutes later</dt><dd>102.4 MHz</dd>
+          <dt>Drift vs battery</dt><dd>about 0.93 MHz per volt (9 V → 6 V: 106.4 → 103.6 MHz)</dd>
+          <dt>Range (75 cm antenna)</dt><dd>clear up to 10 m, breaking up at 30–35 m</dd>
+          <dt>Distance to the Uno</dt><dd>at least 1 m; closer disturbs I2C</dd>
         </dl>
-        <p class="note" style="margin-top:12px">Karena osilatornya LC sederhana, frekuensi bergeser saat baterai turun atau saat tangan mendekat. Di penerima RDA5807M, perintah <span class="mono">FIND</span> mencari ulang frekuensi pemancar secara otomatis (±1.5 MHz).</p>
-        <p class="note" style="margin-top:8px">Trimpot terlalu besar membuat deviasi berlebih dan bunyi pecah; terlalu kecil membuat sinyal tenggelam dalam desis. Ini yang diukur di percobaan E7.</p>
+        <p class="note" style="margin-top:12px">The oscillator is a simple LC one, so the frequency moves when the battery drops or a hand comes close. The <b>Find transmitter</b> button in the live demo makes the RDA5807M search ±1.5 MHz for it.</p>
+        <p class="note" style="margin-top:8px">Too much trimmer gives too much deviation and distorted sound; too little buries the signal in hiss. Experiment E7 measures exactly that.</p>
       </div>
     </div>
   </div>
 </section>
 
-<section id="kanal" class="sec">
+<section id="channel" class="sec">
   <div class="wrap">
     <header class="sec-head">
-      <p class="eyebrow">05 · Kanal</p>
-      <h2>Seberapa tahan tiap modulasi terhadap noise?</h2>
-      <p class="sec-lead">Simulasi ini memakai modulator dan decoder yang sama dengan sistem asli. Atur SNR dan error clock pemancar, lalu kirim frame PRBS lewat kanal ber-noise. Hasilnya: berapa frame ketemu dan berapa bit yang salah (BER).</p>
+      <p class="eyebrow">05 · Channel</p>
+      <h2>How well does each modulation survive noise?</h2>
+      <p class="sec-lead">This simulation uses the same modulator and decoder as the real system. Set the SNR and the transmitter's clock error, then send PRBS frames through a noisy channel. You get how many frames were found and how many bits were wrong (BER).</p>
     </header>
     <div class="panel">
       <div class="controls">
-        <span class="ctl"><label for="simSnr">SNR di pita 400–3600 Hz</label><input type="range" id="simSnr" min="-10" max="20" step="1" value="-2"></span>
+        <span class="ctl"><label for="simSnr">SNR in the 400–3600 Hz band</label><input type="range" id="simSnr" min="-10" max="20" step="1" value="-2"></span>
         <span class="mono" id="simSnrV">−2 dB</span>
-        <span class="ctl"><label for="simClk">Error clock TX</label><input type="range" id="simClk" min="-10" max="10" step="1" value="-1"></span>
+        <span class="ctl"><label for="simClk">TX clock error</label><input type="range" id="simClk" min="-10" max="10" step="1" value="-1"></span>
         <span class="mono" id="simClkV">−0.1 %</span>
         <span class="ctl"><label for="simBaud">Bit rate</label>
           <select id="simBaud"><option>150</option><option selected>300</option><option>600</option><option>1200</option></select></span>
-        <button type="button" class="btn small primary" id="simRun">Kirim 3 frame PRBS</button>
+        <button type="button" class="btn small primary" id="simRun">Send 3 PRBS frames</button>
       </div>
       <div class="grid two">
         <div class="tbl-wrap">
-          <table id="simTbl"><thead><tr><th>Skema</th><th class="num">Frame ketemu</th><th class="num">CRC OK</th><th class="num">Bit salah</th><th class="num">BER</th></tr></thead><tbody></tbody></table>
-          <p class="note" id="simNote" style="margin-top:10px">Tekan tombol untuk mulai. Satu percobaan butuh sekitar 1–3 detik.</p>
+          <table id="simTbl"><thead><tr><th>Scheme</th><th class="num">Frames found</th><th class="num">CRC OK</th><th class="num">Bit errors</th><th class="num">BER</th></tr></thead><tbody></tbody></table>
+          <p class="note" id="simNote" style="margin-top:10px">Press the button to start. One run takes about 1–3 seconds.</p>
         </div>
         <div>
-          <div class="vis-label"><span>sebaran keputusan lunak (−1 = bit 0, +1 = bit 1)</span><span id="simSoftLbl"></span></div>
+          <div class="vis-label"><span>soft-decision spread (−1 = bit 0, +1 = bit 1)</span><span id="simSoftLbl"></span></div>
           <canvas class="plot" id="simSoft" style="height:200px"></canvas>
         </div>
       </div>
@@ -529,48 +533,48 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
   </div>
 </section>
 
-<section id="penerima" class="sec">
+<section id="receiver" class="sec">
   <div class="wrap">
     <header class="sec-head">
-      <p class="eyebrow">06 · Penerima</p>
-      <h2>Menangkap kembali sinyal FM</h2>
-      <p class="sec-lead">Penerima utama adalah chip RDA5807M yang dikendalikan Uno lewat I2C. Modul pertama rusak di bagian RF; modul pengganti (26 Nov) menangkap pemancar dengan RSSI 107. Suaranya belum disambung ke laptop, jadi decode teks masih memakai radio FM di HP.</p>
+      <p class="eyebrow">06 · Receiver</p>
+      <h2>Catching the FM signal again</h2>
+      <p class="sec-lead">The main receiver is an RDA5807M chip controlled by the Uno over I2C. The first module turned out to have a dead RF front end; the replacement (26 Nov) picks up the transmitter at RSSI 107. Its audio isn't wired to the laptop yet, so text decoding still uses a phone FM radio.</p>
     </header>
     <div class="grid three">
       <div class="panel">
-        <h3>RDA5807M (modul RRD-102)</h3>
-        <p class="note">Penerima FM 76–108 MHz dalam satu chip, 3.3 V. Uno 5 V berbicara dengannya lewat level converter BSS138. Uno mengatur frekuensi, volume, mode mono, dan membaca RSSI (kuat sinyal 0–127).</p>
+        <h3>RDA5807M (RRD-102 module)</h3>
+        <p class="note">Single-chip FM receiver, 76–108 MHz, 3.3 V. The 5 V Uno talks to it through a BSS138 level converter. The Uno sets the frequency, volume and mono mode, and reads the RSSI (signal strength, 0–127).</p>
         <dl class="kv" style="margin-top:10px">
-          <dt>Alamat I2C</dt><dd>0x10, 0x11 (+0x60)</dd>
+          <dt>I2C address</dt><dd>0x10, 0x11 (+0x60)</dd>
           <dt>Tuning</dt><dd>reg 03 = (ch &lt;&lt; 6) | 0x10</dd>
           <dt>RSSI</dt><dd>reg 0B &gt;&gt; 9</dd>
         </dl>
       </div>
       <div class="panel">
-        <h3>Radio FM di HP</h3>
-        <p class="note">Earphone dicolok sebagai antena, suara keluar lewat speaker, lalu ditangkap mikrofon laptop. Dipakai untuk decode dan untuk demo yang bisa didengar. Kurang rapi untuk pengukuran resmi, tapi cukup untuk membuktikan link berjalan dari ujung ke ujung.</p>
+        <h3>Phone FM radio</h3>
+        <p class="note">Earphones plugged in as the antenna, sound out of the speaker, picked up by the laptop microphone. Used for decoding and for a demo you can hear. Too rough for formal measurements, but enough to prove the link works end to end.</p>
       </div>
       <div class="panel">
-        <h3>RTL-SDR + SDR++ (rencana)</h3>
-        <p class="note">Kalau RTL-SDR datang: spektrum dan drift pemancar terlihat di waterfall, dan audio hasil demodulasi bisa langsung di-decode tanpa kabel.</p>
+        <h3>RTL-SDR + SDR++ (planned)</h3>
+        <p class="note">Once an RTL-SDR arrives, the transmitter's spectrum and drift show up on a waterfall, and the demodulated audio can be decoded without any cable.</p>
       </div>
     </div>
     <div class="panel" style="margin-top:18px">
-      <h3>Diagnosa modul 1: register mentah dari perintah REG</h3>
-      <p class="note">Modul pertama menjawab di I2C, tapi tidak menangkap satu stasiun pun walau antena 75 cm. Isi registernya dibaca langsung untuk memisahkan masalah firmware dari masalah hardware.</p>
+      <h3>Diagnosing module 1: raw registers from the REG command</h3>
+      <p class="note">The first module answered on I2C but did not pick up a single station, even with a 75 cm antenna. Its registers were read directly to separate firmware problems from hardware problems.</p>
       <div class="tbl-wrap" style="margin-top:10px">
         <table>
-          <thead><tr><th>Register</th><th>Nilai</th><th>Artinya</th></tr></thead>
+          <thead><tr><th>Register</th><th>Value</th><th>Meaning</th></tr></thead>
           <tbody>
-            <tr><td class="mono">00</td><td class="mono">5804</td><td>ID chip RDA5807M asli</td></tr>
-            <tr><td class="mono">02</td><td class="mono">E005</td><td>audio aktif, tidak mute, mono, chip menyala</td></tr>
-            <tr><td class="mono">03</td><td class="mono">2A40</td><td>kanal 169 → 87.0 + 16.9 = 103.9 MHz</td></tr>
-            <tr><td class="mono">0A</td><td class="mono">40A9</td><td>tuning selesai (STC = 1) di kanal 169</td></tr>
-            <tr><td class="mono">0B</td><td class="mono">048F</td><td>RSSI = 2, FM_TRUE = 0: tidak ada sinyal masuk</td></tr>
+            <tr><td class="mono">00</td><td class="mono">5804</td><td>genuine RDA5807M chip ID</td></tr>
+            <tr><td class="mono">02</td><td class="mono">E005</td><td>audio on, not muted, mono, chip enabled</td></tr>
+            <tr><td class="mono">03</td><td class="mono">2A40</td><td>channel 169 → 87.0 + 16.9 = 103.9 MHz</td></tr>
+            <tr><td class="mono">0A</td><td class="mono">40A9</td><td>tuning done (STC = 1) on channel 169</td></tr>
+            <tr><td class="mono">0B</td><td class="mono">048F</td><td>RSSI = 2, FM_TRUE = 0: no signal coming in</td></tr>
           </tbody>
         </table>
       </div>
-      <p class="note" style="margin-top:10px">Kesimpulan: firmware dan I2C beres, tapi bagian RF modul ini rusak. Pemancar dari jarak 10–30 cm cuma terbaca RSSI ±10, padahal modul sehat seharusnya 50 ke atas. Modul pengganti (26 Nov) membaca 107–108 di frekuensi pemancar dan 28–55 di frekuensi lain.</p>
+      <p class="note" style="margin-top:10px">Conclusion: firmware and I2C are fine, but this module's RF section is dead. With the transmitter 10–30 cm away it read only about RSSI 10, where a healthy module reads 50 or more. The replacement module (26 Nov) reads 107–108 at the transmitter's frequency and 28–55 elsewhere.</p>
     </div>
   </div>
 </section>
@@ -578,101 +582,101 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
 <section id="decoder" class="sec live">
   <div class="wrap">
     <header class="sec-head">
-      <p class="eyebrow">07 · Kirim dan decode</p>
-      <h2>Kirim dari laptop, decode di browser</h2>
-      <p class="sec-lead">Panel Pemancar mengirim teks ke Uno lewat kabel USB, lalu Uno memancarkannya lewat FM. Panel Penerima RDA menunjukkan modul RDA5807M menangkap pemancar itu, dengan kuat sinyal yang bergerak live. Decoder di bawahnya mendengarkan lewat mikrofon dan men-decode teksnya. Decodernya terjemahan baris demi baris dari decoder Python proyek: band-pass 400–3600 Hz, mixing ke 0 Hz, keputusan lunak per sampel, pencarian preamble + sync, pelacakan clock ±1 %, lalu CRC-8.</p>
+      <p class="eyebrow">07 · Send and decode</p>
+      <h2>Send from the laptop, decode in the browser</h2>
+      <p class="sec-lead">The Transmitter panel sends text to the Uno over USB, and the Uno broadcasts it over FM. The RDA receiver panel shows the RDA5807M picking up that transmitter, with a live signal strength. The decoder below listens through the microphone and decodes the text. It is a line-by-line port of the project's Python decoder: 400–3600 Hz band-pass, mixing down to 0 Hz, soft decisions per sample, preamble + sync search, ±1 % clock tracking, then CRC-8.</p>
     </header>
     <div class="panel tx-panel" id="txPanel">
       <div class="tx-head">
-        <h3>Pemancar: kirim teks dari laptop</h3>
-        <span class="pill idle" id="txConn">belum terhubung</span>
+        <h3>Transmitter: send text from the laptop</h3>
+        <span class="pill idle" id="txConn">not connected</span>
       </div>
-      <p class="note">Laptop mengirim perintah ke Uno lewat kabel USB (Web Serial, di Chrome atau Edge). Uno menyimpan teksnya di EEPROM, lalu memancarkannya berulang-ulang lewat pemancar FM. Tidak ada kode yang di-upload ulang: firmware sudah mengerti perintah <span class="mono">M &lt;teks&gt;</span>, <span class="mono">S0</span>/<span class="mono">S1</span>/<span class="mono">S2</span>, dan <span class="mono">R300</span>. Saat dihubungkan, Uno bisa restart ±2 detik; pengaturannya tetap tersimpan.</p>
+      <p class="note">The laptop sends commands to the Uno over USB (Web Serial, in Chrome or Edge). The Uno stores the text in EEPROM and broadcasts it over and over through the FM transmitter. Nothing is re-uploaded: the firmware already understands <span class="mono">M &lt;text&gt;</span>, <span class="mono">S0</span>/<span class="mono">S1</span>/<span class="mono">S2</span> and <span class="mono">R300</span>. Connecting can restart the Uno for about 2 seconds; its settings stay saved.</p>
       <div class="controls">
-        <button type="button" class="btn small primary" id="txConnect">Hubungkan Uno</button>
-        <button type="button" class="btn small" id="txDisconnect" hidden>Putuskan</button>
+        <button type="button" class="btn small primary" id="txConnect">Connect Uno</button>
+        <button type="button" class="btn small" id="txDisconnect" hidden>Disconnect</button>
       </div>
       <div class="controls">
-        <span class="ctl"><label for="txText">Teks</label><input type="text" id="txText" value="halo PDSK" maxlength="100" autocomplete="off" spellcheck="false"><span class="note mono" id="txCount">9/100</span></span>
-        <span class="ctl"><label for="txScheme">Skema</label>
+        <span class="ctl"><label for="txText">Text</label><input type="text" id="txText" value="halo PDSK" maxlength="100" autocomplete="off" spellcheck="false"><span class="note mono" id="txCount">9/100</span></span>
+        <span class="ctl"><label for="txScheme">Scheme</label>
           <select id="txScheme"><option value="0">ASK</option><option value="1" selected>FSK</option><option value="2">DBPSK</option></select></span>
         <span class="ctl"><label for="txBaud">Bit rate</label>
           <select id="txBaud"><option>150</option><option selected>300</option><option>600</option><option>1200</option></select></span>
-        <button type="button" class="btn small primary" id="txSend" disabled>Kirim ke Uno</button>
+        <button type="button" class="btn small primary" id="txSend" disabled>Send to Uno</button>
       </div>
       <div class="controls">
-        <button type="button" class="btn small" id="txTone" disabled>Nada 1000 Hz (cari frekuensi)</button>
-        <button type="button" class="btn small" id="txData" disabled>Kembali ke data</button>
-        <button type="button" class="btn small" id="txStatus" disabled>Cek status</button>
+        <button type="button" class="btn small" id="txTone" disabled>1000 Hz tone (find the frequency)</button>
+        <button type="button" class="btn small" id="txData" disabled>Back to data</button>
+        <button type="button" class="btn small" id="txStatus" disabled>Check status</button>
       </div>
       <div class="tx-grid">
         <dl class="kv">
           <dt>Mode</dt><dd id="txMode">–</dd>
-          <dt>Teks di Uno</dt><dd id="txNow">–</dd>
-          <dt>Skema</dt><dd id="txSchemeNow">–</dd>
+          <dt>Text on the Uno</dt><dd id="txNow">–</dd>
+          <dt>Scheme</dt><dd id="txSchemeNow">–</dd>
           <dt>Bit rate</dt><dd id="txBaudNow">–</dd>
         </dl>
-        <div class="uno-log" id="txLog" role="log" aria-live="polite"><span class="ph">Balasan Uno muncul di sini.</span></div>
+        <div class="uno-log" id="txLog" role="log" aria-live="polite"><span class="ph">The Uno's replies show up here.</span></div>
       </div>
       <div class="mic-hint" id="txHint"></div>
     </div>
     <div class="panel rx-panel" id="rdaPanel">
       <div class="tx-head">
-        <h3>Penerima: modul RDA5807M</h3>
-        <span class="pill idle" id="rdaConn">belum terhubung</span>
+        <h3>Receiver: RDA5807M module</h3>
+        <span class="pill idle" id="rdaConn">not connected</span>
       </div>
-      <p class="note">Uno yang sama juga mengendalikan penerima FM RDA5807M lewat I2C. Kuat sinyal (RSSI, 0–127) dibaca dari register chip 10 kali per detik. Pemancar tertangkap kalau angkanya jauh di atas frekuensi kosong; uji 26 Nov: 107 di frekuensi pemancar, 28–55 di frekuensi lain. Suara RDA belum disambung ke laptop, jadi decode di bawah masih lewat radio HP dan mikrofon.</p>
+      <p class="note">The same Uno also controls the RDA5807M FM receiver over I2C. The signal strength (RSSI, 0–127) is read from the chip's register 10 times a second. The transmitter is caught when the number is well above an empty frequency; on 26 Nov it read 107 at the transmitter and 28–55 elsewhere. The RDA's audio isn't wired to the laptop yet, so the decoder below still listens through a phone radio and the microphone.</p>
       <div class="stats">
-        <div class="stat"><div class="k">frekuensi RDA</div><div class="v" id="rdaFreq">–</div></div>
-        <div class="stat"><div class="k">kuat sinyal (RSSI)</div><div class="v" id="rdaRssi">–</div></div>
-        <div class="stat"><div class="k">volume RDA</div><div class="v" id="rdaVol">–</div></div>
+        <div class="stat"><div class="k">RDA frequency</div><div class="v" id="rdaFreq">–</div></div>
+        <div class="stat"><div class="k">signal strength (RSSI)</div><div class="v" id="rdaRssi">–</div></div>
+        <div class="stat"><div class="k">RDA volume</div><div class="v" id="rdaVol">–</div></div>
       </div>
       <div class="meter rx-meter"><div class="k">RSSI 0–127</div><div class="bar"><i id="rdaBar"></i></div></div>
-      <div class="vis-label" style="margin-top:12px"><span>kuat sinyal 30 detik terakhir</span><span id="rdaSparkLbl">Live mati</span></div>
+      <div class="vis-label" style="margin-top:12px"><span>signal strength, last 30 seconds</span><span id="rdaSparkLbl">Live off</span></div>
       <canvas class="plot" id="rdaSpark" style="height:90px"></canvas>
       <div class="controls" style="margin-top:14px">
-        <button type="button" class="btn small" id="rdaLive" aria-pressed="false" disabled>Live: mati</button>
-        <span class="ctl"><label for="rdaFreqIn">Frekuensi (MHz)</label><input type="number" id="rdaFreqIn" min="87.5" max="108" step="0.1" value="102.6"></span>
-        <button type="button" class="btn small" id="rdaTune" disabled>Setel</button>
-        <button type="button" class="btn small primary" id="rdaFind" disabled>Cari pemancar (±1.5 MHz)</button>
+        <button type="button" class="btn small" id="rdaLive" aria-pressed="false" disabled>Live: off</button>
+        <span class="ctl"><label for="rdaFreqIn">Frequency (MHz)</label><input type="number" id="rdaFreqIn" min="87.5" max="108" step="0.1" value="102.6"></span>
+        <button type="button" class="btn small" id="rdaTune" disabled>Tune</button>
+        <button type="button" class="btn small primary" id="rdaFind" disabled>Find transmitter (±1.5 MHz)</button>
       </div>
-      <div class="vis-label"><span>hasil cari: kuat sinyal per frekuensi</span><span id="rdaSweepLbl"></span></div>
+      <div class="vis-label"><span>search result: signal strength per frequency</span><span id="rdaSweepLbl"></span></div>
       <canvas class="plot" id="rdaSweep" style="height:110px"></canvas>
       <div class="mic-hint" id="rdaHint"></div>
     </div>
     <div class="panel">
-      <h3>Decoder live (mikrofon laptop)</h3>
+      <h3>Live decoder (laptop microphone)</h3>
       <div class="controls">
-        <div class="sources" id="sources" role="group" aria-label="Sumber suara">
-          <button type="button" class="btn small" data-src="mic" aria-pressed="false">Mikrofon</button>
-          <button type="button" class="btn small" data-src="rec-FSK" aria-pressed="false">Rekaman FSK</button>
-          <button type="button" class="btn small" data-src="rec-ASK" aria-pressed="false">Rekaman ASK</button>
-          <button type="button" class="btn small" data-src="rec-DBPSK" aria-pressed="false">Rekaman DBPSK</button>
-          <button type="button" class="btn small" data-src="test" aria-pressed="false">Sinyal uji</button>
-          <label class="btn small" for="liveFile">File sendiri…</label>
+        <div class="sources" id="sources" role="group" aria-label="Audio source">
+          <button type="button" class="btn small" data-src="mic" aria-pressed="false">Microphone</button>
+          <button type="button" class="btn small" data-src="rec-FSK" aria-pressed="false">FSK recording</button>
+          <button type="button" class="btn small" data-src="rec-ASK" aria-pressed="false">ASK recording</button>
+          <button type="button" class="btn small" data-src="rec-DBPSK" aria-pressed="false">DBPSK recording</button>
+          <button type="button" class="btn small" data-src="test" aria-pressed="false">Test signal</button>
+          <label class="btn small" for="liveFile">Your own file…</label>
           <input type="file" id="liveFile" accept="audio/*,.wav,.mp3,.m4a,.aac,.ogg" hidden>
           <button type="button" class="btn small" id="liveStop" disabled>Stop</button>
         </div>
       </div>
       <div class="controls">
-        <span class="ctl"><label for="liveScheme">Skema</label>
-          <select id="liveScheme"><option value="auto" selected>otomatis</option><option>ASK</option><option>FSK</option><option>DBPSK</option></select></span>
+        <span class="ctl"><label for="liveScheme">Scheme</label>
+          <select id="liveScheme"><option value="auto" selected>auto</option><option>ASK</option><option>FSK</option><option>DBPSK</option></select></span>
         <span class="ctl"><label for="liveBaud">Bit rate</label>
           <select id="liveBaud"><option>150</option><option selected>300</option><option>600</option><option>1200</option></select></span>
-        <span class="ctl"><label for="testText">Teks sinyal uji</label><input type="text" id="testText" value="halo dari browser" maxlength="100" autocomplete="off"></span>
-        <span class="ctl"><label for="testScheme">Skema uji</label>
+        <span class="ctl"><label for="testText">Test signal text</label><input type="text" id="testText" value="hello from the browser" maxlength="100" autocomplete="off"></span>
+        <span class="ctl"><label for="testScheme">Test scheme</label>
           <select id="testScheme"><option>ASK</option><option selected>FSK</option><option>DBPSK</option></select></span>
       </div>
-      <div class="live-status"><span class="rec" id="liveRec"></span><span id="liveStatus">Belum mendengarkan. Pilih sumber suara di atas.</span></div>
+      <div class="live-status"><span class="rec" id="liveRec"></span><span id="liveStatus">Not listening yet. Pick an audio source above.</span></div>
       <div class="mic-hint" id="micHint"></div>
       <div class="live-grid">
         <div class="vis">
           <div>
-            <div class="vis-label"><span>spektrum 0–4 kHz</span><span>garis: 1200 · 1800 · 2200 Hz</span></div>
+            <div class="vis-label"><span>spectrum 0–4 kHz</span><span>lines: 1200 · 1800 · 2200 Hz</span></div>
             <canvas class="plot" id="liveSpec" style="height:150px"></canvas>
           </div>
           <div>
-            <div class="vis-label"><span>waterfall (waktu berjalan ke bawah)</span><span id="liveFs"></span></div>
+            <div class="vis-label"><span>waterfall (time runs downward)</span><span id="liveFs"></span></div>
             <canvas class="plot" id="liveFall" style="height:150px"></canvas>
           </div>
           <div class="meters">
@@ -682,72 +686,72 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
             <div class="meter"><div class="k">level</div><div class="bar"><i id="mLevel"></i></div></div>
           </div>
           <div>
-            <div class="vis-label"><span>keputusan lunak 2 detik terakhir (+ = bit 1)</span><span id="liveSoftLbl"></span></div>
+            <div class="vis-label"><span>soft decisions, last 2 seconds (+ = bit 1)</span><span id="liveSoftLbl"></span></div>
             <canvas class="plot" id="liveSoft" style="height:110px"></canvas>
           </div>
         </div>
         <div>
           <div class="counters">
             <div class="stat"><div class="k">CRC OK</div><div class="v" id="cOk" style="color:var(--ok)">0</div></div>
-            <div class="stat"><div class="k">CRC gagal</div><div class="v" id="cBad" style="color:var(--bad)">0</div></div>
-            <div class="stat"><div class="k">skema</div><div class="v" id="cScheme">–</div></div>
-            <div class="stat"><div class="k">clock TX</div><div class="v" id="cClock">–</div></div>
+            <div class="stat"><div class="k">CRC failed</div><div class="v" id="cBad" style="color:var(--bad)">0</div></div>
+            <div class="stat"><div class="k">scheme</div><div class="v" id="cScheme">–</div></div>
+            <div class="stat"><div class="k">TX clock</div><div class="v" id="cClock">–</div></div>
           </div>
           <div class="log-wrap">
             <table>
-              <thead><tr><th>Waktu</th><th>Skema</th><th>Isi</th><th>CRC</th><th class="num">Mutu</th><th class="num">Clock</th></tr></thead>
+              <thead><tr><th>Time</th><th>Scheme</th><th>Content</th><th>CRC</th><th class="num">Quality</th><th class="num">Clock</th></tr></thead>
               <tbody id="liveLog"></tbody>
             </table>
           </div>
-          <p class="note" id="logNote" style="margin-top:8px">Baris abu-abu adalah contoh dari rekaman FSK 24 Nov, sebelum halaman ini mendengarkan apa pun.</p>
+          <p class="note" id="logNote" style="margin-top:8px">The grey rows are an example from the 24 Nov FSK recording, shown before this page has listened to anything.</p>
         </div>
       </div>
       <details class="howto">
-        <summary>Cara demo dengan pemancar dan radio HP</summary>
+        <summary>How to run the demo with the transmitter and a phone radio</summary>
         <ol>
-          <li>Colokkan kabel audio pemancar ke jack di breadboard, nyalakan pemancar, jauhkan ±1 m dari Uno.</li>
-          <li>Di panel <b>Pemancar</b>: klik <b>Hubungkan Uno</b>, pilih port Arduino (biasanya COM3), ketik teks, pilih skema dan bit rate, lalu <b>Kirim ke Uno</b>. Tanpa Chrome/Edge, perintah yang sama bisa diketik di Serial Monitor Arduino IDE: <span class="mono">M halo PDSK</span>, <span class="mono">S0</span> / <span class="mono">S1</span> / <span class="mono">S2</span>, <span class="mono">R300</span>.</li>
-          <li>Di panel <b>Penerima RDA</b>: klik <b>Cari pemancar</b>. RDA disetel ke frekuensi paling kuat, dan bar kuat sinyal naik saat pemancar menyala, turun saat dimatikan.</li>
-          <li>Setel radio FM HP ke frekuensi pemancar sampai bunyi data terdengar jelas; nyalakan speaker. Kalau susah dicari, klik <b>Nada 1000 Hz</b> dulu, lalu <b>Kembali ke data</b>.</li>
-          <li>Dekatkan speaker HP ke mikrofon laptop, tekan <b>Mikrofon</b>, dan izinkan akses mikrofon.</li>
-          <li>Frame yang tertangkap muncul di tabel. Kalau semuanya gagal, cek frekuensi radio (pemancar bisa bergeser) dan kecilkan volume HP bila suaranya pecah.</li>
+          <li>Plug the transmitter's audio cable into the jack on the breadboard, switch the transmitter on, and keep it about 1 m from the Uno.</li>
+          <li>In the <b>Transmitter</b> panel: click <b>Connect Uno</b>, pick the Arduino port (usually COM3), type a text, choose the scheme and bit rate, then <b>Send to Uno</b>. Without Chrome or Edge, the same commands can be typed in the Arduino IDE Serial Monitor: <span class="mono">M halo PDSK</span>, <span class="mono">S0</span> / <span class="mono">S1</span> / <span class="mono">S2</span>, <span class="mono">R300</span>.</li>
+          <li>In the <b>RDA receiver</b> panel: click <b>Find transmitter</b>. The RDA tunes to the strongest frequency, and the signal bar rises when the transmitter is on and drops when it is off.</li>
+          <li>Tune a phone FM radio to the transmitter until the data sound is clear, and switch its speaker on. If the station is hard to find, click <b>1000 Hz tone</b> first, then <b>Back to data</b>.</li>
+          <li>Hold the phone speaker near the laptop microphone, press <b>Microphone</b>, and allow microphone access.</li>
+          <li>Frames that come through appear in the table. If they all fail, check the radio frequency (the transmitter drifts) and turn the phone volume down if the sound distorts.</li>
         </ol>
       </details>
     </div>
   </div>
 </section>
 
-<section id="jurnal" class="sec">
+<section id="journal" class="sec">
   <div class="wrap">
     <header class="sec-head">
-      <p class="eyebrow">Jurnal percobaan</p>
-      <h2>Yang berhasil, yang gagal, dan apa yang kami pelajari</h2>
-      <p class="sec-lead">Catatan apa adanya dari proses membangun sistem ini, termasuk kegagalan dan cara menemukannya.</p>
+      <p class="eyebrow">Build log</p>
+      <h2>What worked, what failed, and what I learned</h2>
+      <p class="sec-lead">An honest record of building this system, including the failures and how each one was tracked down.</p>
     </header>
-    <div class="chips" id="tlChips" role="group" aria-label="Saring jurnal">
-      <button type="button" data-f="all" aria-pressed="true">Semua</button>
-      <button type="button" data-f="ok" aria-pressed="false">Berhasil</button>
-      <button type="button" data-f="fail" aria-pressed="false">Gagal &amp; perbaikan</button>
-      <button type="button" data-f="decision" aria-pressed="false">Keputusan</button>
+    <div class="chips" id="tlChips" role="group" aria-label="Filter the build log">
+      <button type="button" data-f="all" aria-pressed="true">All</button>
+      <button type="button" data-f="ok" aria-pressed="false">Worked</button>
+      <button type="button" data-f="fail" aria-pressed="false">Failed &amp; fixed</button>
+      <button type="button" data-f="decision" aria-pressed="false">Decisions</button>
     </div>
     <ol class="timeline" id="timeline"></ol>
   </div>
 </section>
 
-<section id="hasil" class="sec">
+<section id="results" class="sec">
   <div class="wrap">
     <header class="sec-head">
-      <p class="eyebrow">Hasil &amp; rencana</p>
-      <h2>Angka yang sudah terukur</h2>
-      <p class="sec-lead">Uji ujung ke ujung 24 Nov: Uno → pemancar FM → radio FM HP → speaker HP → mikrofon laptop → decoder, teks "halo PDSK" di 300 baud, rekaman 10 detik per skema.</p>
+      <p class="eyebrow">Results &amp; plans</p>
+      <h2>Measured so far</h2>
+      <p class="sec-lead">End-to-end test on 24 Nov: Uno → FM transmitter → phone FM radio → phone speaker → laptop microphone → decoder, text "halo PDSK" at 300 baud, one 10-second recording per scheme.</p>
     </header>
     <div class="grid two">
       <div class="panel">
-        <h3>Frame yang ter-decode</h3>
+        <h3>Decoded frames</h3>
         <div class="bars" id="resBars" style="margin-top:12px"></div>
         <div class="tbl-wrap" style="margin-top:14px">
           <table>
-            <thead><tr><th>Skema</th><th class="num">CRC OK</th><th class="num">Gagal</th><th class="num">Sukses</th></tr></thead>
+            <thead><tr><th>Scheme</th><th class="num">CRC OK</th><th class="num">Failed</th><th class="num">Success</th></tr></thead>
             <tbody>
               <tr><td><span class="pill s-FSK">FSK</span></td><td class="num">6</td><td class="num">2</td><td class="num">75 %</td></tr>
               <tr><td><span class="pill s-ASK">ASK</span></td><td class="num">14</td><td class="num">3</td><td class="num">82 %</td></tr>
@@ -755,25 +759,25 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
             </tbody>
           </table>
         </div>
-        <p class="note" style="margin-top:10px">Clock pemancar terukur −999 ppm (Uno sekitar 0.1 % lebih lambat), sudah ditangani pelacakan clock decoder. Frame gagal berasal dari jalur akustik (noise ruangan, speaker HP terlalu keras), bukan dari rangkaian.</p>
+        <p class="note" style="margin-top:10px">The transmitter clock measured −999 ppm (the Uno runs about 0.1 % slow), which the decoder's clock tracking absorbs. The failed frames come from the acoustic path (room noise, a phone speaker turned up too far), not from the circuit.</p>
       </div>
       <div class="panel">
-        <h3>Verifikasi</h3>
+        <h3>Verification</h3>
         <ul style="margin:8px 0 0;padding-left:18px;display:grid;gap:8px;color:var(--muted)">
-          <li><b style="color:var(--text)">Simulasi firmware</b>: kode C++ yang sama dengan di Uno, lewat model filter RC, de-emphasis, dan noise 30 dB, untuk 3 skema × 4 bit rate plus clock ±0.5 %. Semua lolos.</li>
-          <li><b style="color:var(--text)">Selftest decoder Python</b>: lolos, termasuk clock ±0.5 %.</li>
-          <li><b style="color:var(--text)">Decoder di halaman ini</b>: hasilnya identik dengan Python pada ketiga rekaman (6/2, 14/3, 12/4).</li>
-          <li><b style="color:var(--text)">Hardware</b>: perintah serial, EEPROM, I2C, filter audio, dan pemancar terbukti di alat sungguhan.</li>
+          <li><b style="color:var(--text)">Firmware simulation</b>: the same C++ code as on the Uno, run through a model of the RC filter, de-emphasis and 30 dB noise, for 3 schemes × 4 bit rates plus ±0.5 % clock error. All passed.</li>
+          <li><b style="color:var(--text)">Python decoder selftest</b>: passed, including ±0.5 % clock error.</li>
+          <li><b style="color:var(--text)">Decoder on this page</b>: identical to Python on all three recordings (6/2, 14/3, 12/4).</li>
+          <li><b style="color:var(--text)">Hardware</b>: serial commands, EEPROM, I2C, the audio filter, the transmitter and the replacement RDA5807M proven on the real parts.</li>
         </ul>
-        <h3 style="margin-top:18px">Pengukuran resmi (setelah RDA5807M terpasang)</h3>
+        <h3 style="margin-top:18px">Formal measurements (need the RDA audio wired to the laptop)</h3>
         <ul class="plan" style="margin-top:10px">
-          <li><span class="id">E1</span><span class="d"><b>Respon frekuensi</b> dengan sweep 100 Hz–12 kHz</span><span class="pill warn">menunggu RDA</span></li>
-          <li><span class="id">E2</span><span class="d"><b>SNR vs jarak</b> dengan nada 1000 Hz</span><span class="pill warn">menunggu RDA</span></li>
-          <li><span class="id">E3</span><span class="d"><b>RSSI vs jarak</b> dari register RDA</span><span class="pill warn">menunggu RDA</span></li>
-          <li><span class="id">E4</span><span class="d"><b>BER vs jarak</b> untuk ASK, FSK, DBPSK</span><span class="pill warn">menunggu RDA</span></li>
-          <li><span class="id">E5</span><span class="d"><b>BER vs bit rate</b> 150–1200 baud</span><span class="pill warn">menunggu RDA</span></li>
-          <li><span class="id">E6</span><span class="d"><b>Spektrum</b> tiap skema</span><span class="pill info">bisa dilihat di decoder live</span></li>
-          <li><span class="id">E7</span><span class="d"><b>Over-deviation</b>: 5 posisi trimpot</span><span class="pill warn">menunggu RDA</span></li>
+          <li><span class="id">E1</span><span class="d"><b>Frequency response</b> with a 100 Hz–12 kHz sweep</span><span class="pill warn">needs RDA audio</span></li>
+          <li><span class="id">E2</span><span class="d"><b>SNR vs distance</b> with a 1000 Hz tone</span><span class="pill warn">needs RDA audio</span></li>
+          <li><span class="id">E3</span><span class="d"><b>RSSI vs distance</b> from the RDA register</span><span class="pill info">possible now (RDA panel)</span></li>
+          <li><span class="id">E4</span><span class="d"><b>BER vs distance</b> for ASK, FSK, DBPSK</span><span class="pill warn">needs RDA audio</span></li>
+          <li><span class="id">E5</span><span class="d"><b>BER vs bit rate</b> 150–1200 baud</span><span class="pill warn">needs RDA audio</span></li>
+          <li><span class="id">E6</span><span class="d"><b>Spectrum</b> of each scheme</span><span class="pill info">visible in the live decoder</span></li>
+          <li><span class="id">E7</span><span class="d"><b>Over-deviation</b>: 5 trimmer positions</span><span class="pill warn">needs RDA audio</span></li>
         </ul>
       </div>
     </div>
@@ -784,16 +788,16 @@ footer h3 { color: var(--muted); font-size: 0.9rem; margin-bottom: 6px; }
 <footer>
   <div class="wrap grid three">
     <div>
-      <h3>Perangkat</h3>
-      <p>Arduino Uno R3 · pemancar FM kit S-151 · RDA5807M (RRD-102) · level converter BSS138 · filter RC 1.5 kΩ / 10 nF · trimpot 10 kΩ · jack TRRS 3.5 mm</p>
+      <h3>Hardware</h3>
+      <p>Arduino Uno R3 · S-151 FM transmitter kit · RDA5807M (RRD-102) · BSS138 level converter · 1.5 kΩ / 10 nF RC filter · 10 kΩ trimmer · 3.5 mm TRRS jack</p>
     </div>
     <div>
-      <h3>Perangkat lunak</h3>
-      <p>Firmware C++ (Arduino) · Python: numpy, sounddevice, pyserial, matplotlib · halaman ini: JavaScript, Web Audio API, Web Worker</p>
+      <h3>Software</h3>
+      <p>C++ firmware (Arduino) · Python: numpy, sounddevice, pyserial, matplotlib · this page: JavaScript, Web Audio API, Web Worker, Web Serial</p>
     </div>
     <div>
-      <h3>Proyek</h3>
-      <p>FM Multi-Mod Link: Komunikasi Data Digital (ASK, FSK, DBPSK) melalui Kanal FM. Mata kuliah Dasar Sistem Komunikasi.<br>Kode sumber, firmware, dan rekaman: <a href="https://github.com/Arsa07lol/fmlink">github.com/Arsa07lol/fmlink</a></p>
+      <h3>Project</h3>
+      <p>FM Multi-Mod Link: digital data (ASK, FSK, DBPSK) over an FM channel. Built by Radithya Arsa Wibowo for the Fundamentals of Communication Systems course at PENS, Surabaya.<br>Source code, firmware and recordings: <a href="https://github.com/Arsa07lol/fmlink">github.com/Arsa07lol/fmlink</a></p>
     </div>
   </div>
 </footer>

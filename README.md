@@ -2,7 +2,9 @@
 
 Digital data (ASK, FSK and DBPSK audio tones) sent over an FM broadcast-band link and measured end to end with a laptop.
 
-**Website: https://arsa07lol.github.io/fmlink/** walks through the whole chain (frame, modulation, the Uno's DDS, the RC filter, FM, the channel, the receiver) and runs the decoder in the browser: point it at the laptop microphone, or play one of the included recordings.
+By **Radithya Arsa Wibowo**.
+
+**Website: https://arsa07lol.github.io/fmlink/** walks through the whole chain (frame, modulation, the Uno's DDS, the RC filter, FM, the channel, the receiver) and runs the decoder in the browser: point it at the laptop microphone, or play one of the included recordings. With the Uno plugged in (Chrome or Edge), the same page changes the transmitted text, scheme and bit rate over USB and shows the receiver's signal strength live.
 
 One Arduino Uno does both ends of the bench setup. It generates the modulated tones for a small FM transmitter and it controls an RDA5807M FM receiver over I2C. The laptop records the receiver audio and a Python toolkit decodes the frames, counts bit errors and measures SNR, THD, frequency response and RSSI.
 
@@ -32,7 +34,7 @@ The decoder tracks the transmitter's real bit rate (±1 %). The Uno runs from a 
 |---|---|
 | `fmlink_uno/` | Arduino Uno firmware (TX audio + RDA5807M control) |
 | `python/fmlink.py` | Laptop toolkit: record, decode, BER, SNR, sweep, spectrum, RSSI, live view, plots, WAV generator |
-| `web/` | The website and its in-browser decoder (a JavaScript port of the Python decoder; both give the same result on the recordings in `web/audio/`) |
+| `web/` | The website: in-browser decoder (a JavaScript port of the Python decoder; both give the same result on the recordings in `web/audio/`), plus Transmitter and RDA receiver panels that talk to the Uno over Web Serial |
 | `tools/` | PC simulator of the firmware core, a firmware-in-the-loop test, the website build script |
 | `fmlink_tx/`, `fmlink_rx/` | Earlier STM32 transmitter and Uno-only receiver versions (archive) |
 | `photos/` | Build photos |
@@ -50,8 +52,9 @@ Run the commands from the repository root.
 
 Website on your own laptop: `python -m http.server 8765`, then open http://localhost:8765/web/. The microphone only works on localhost or https, not from a `file://` page. `web/selftest.html` checks the browser decoder. After editing `web/site.html`, run `python tools/build_web.py` to rebuild `web/index.html`.
 
-## Status (24 Nov 2026)
+## Status (27 Nov 2026)
 
 - The transmit chain works on air: Uno, RC filter, trimmer, S-151 FM transmitter, received on a phone FM radio.
 - First end-to-end decode: "halo PDSK" text frames at 300 baud went through the phone radio and its speaker into the laptop mic. Frames with CRC OK / CRC failed: FSK 6 / 2, ASK 14 / 3, DBPSK 12 / 4. The recordings are in `web/audio/`.
-- The first RDA5807M module answers on I2C but its RF front end is dead (RSSI 2-3 on every channel, about 10 with the transmitter 10-30 cm away). Replacement modules are on the way; the official measurements follow.
+- The first RDA5807M module answered on I2C but had a dead RF front end (RSSI 2-3 on every channel). The replacement module works: RSSI 107-108 (of 127) at the transmitter's frequency, 28-55 elsewhere.
+- Still to do: wire the RDA's audio output into the laptop's microphone input, then the formal measurements (frequency response, SNR, RSSI and BER against distance and bit rate).

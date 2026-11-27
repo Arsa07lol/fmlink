@@ -109,7 +109,7 @@
     }
     ctx.stroke();
     const cur = ((Math.floor((start + span / 2) / SPB300) % nb) + nb) % nb;
-    $("#heroFoot").textContent = `bit ${cur} dari ${nb} · ${fieldOf(hero.frame, cur)} · ${hero.scheme} 300 baud, diperlambat`;
+    $("#heroFoot").textContent = `bit ${cur} of ${nb} · ${fieldOf(hero.frame, cur)} · ${hero.scheme} 300 baud, slowed down`;
   }
 
   function heroLoop(t) {
@@ -130,50 +130,50 @@
 
   // ---------------------------------------------------------------- signal chain
   const STAGES = [
-    { t: "Data", s: "teks atau PRBS-9",
-      p: ["Pesan diketik di Serial Monitor (misalnya <b>M halo PDSK</b>) atau dipilih pola <b>PRBS-9</b> untuk mengukur BER. Firmware membungkusnya jadi frame: preamble, sync, type, len, payload, CRC-8, dan idle.",
-        "Frame yang sama dikirim berulang terus, jadi penerima bisa mulai mendengarkan kapan saja."],
-      f: [["Panjang teks", "maks 100 byte"], ["Frame terbesar", "113 byte"], ["CRC", "CRC-8, poly 0x07"], ["PRBS", "x⁹ + x⁵ + 1, 511 bit"]],
+    { t: "Data", s: "text or PRBS-9",
+      p: ["A message is typed in the Transmitter panel or the Serial Monitor (for example <b>M halo PDSK</b>), or the <b>PRBS-9</b> pattern is chosen to measure the BER. The firmware wraps it in a frame: preamble, sync, type, len, payload, CRC-8 and idle.",
+        "The same frame repeats non-stop, so the receiver can start listening at any moment."],
+      f: [["Text length", "up to 100 bytes"], ["Largest frame", "113 bytes"], ["CRC", "CRC-8, poly 0x07"], ["PRBS", "x⁹ + x⁵ + 1, 511 bits"]],
       code: "fmlink_uno_core.h · buildFrame()" },
-    { t: "Modulator DDS", s: "31 250 sampel/detik",
-      p: ["Timer1 memanggil interrupt setiap 32 µs. Akumulator fasa 32 bit ditambah <b>langkah fasa</b> sesuai nada (1200, 2200, atau 1800 Hz), lalu 8 bit teratasnya dipakai sebagai indeks tabel sinus.",
-        "Pergantian bit memakai akumulator pecahan, jadi 300 baud tetap tepat walaupun 31 250 / 300 = 104.17 sampel per bit."],
-      f: [["Laju sampel", "31 250 Hz = 16 MHz / 512"], ["Langkah fasa", "f · 2³² / 31 250"], ["Tabel sinus", "256 × 8 bit, 128 ± 100"]],
+    { t: "DDS modulator", s: "31 250 samples/s",
+      p: ["Timer1 fires an interrupt every 32 µs. A 32-bit phase accumulator adds the <b>phase step</b> of the current tone (1200, 2200 or 1800 Hz), and its top 8 bits index a sine table.",
+        "Bit changes use a fractional accumulator, so 300 baud stays exact even though 31 250 / 300 = 104.17 samples per bit."],
+      f: [["Sample rate", "31 250 Hz = 16 MHz / 512"], ["Phase step", "f · 2³² / 31 250"], ["Sine table", "256 × 8 bit, 128 ± 100"]],
       code: "fmlink_uno_core.h · Modulator.next()" },
-    { t: "PWM di D3", s: "62.5 kHz, 8 bit",
-      p: ["Uno tidak punya DAC. Timer2 menghasilkan PWM 62.5 kHz di pin D3, dan duty cycle-nya diisi nilai sampel 0–255.",
-        "Interrupt Timer1 dikunci ke PWM: tepat 2 periode PWM per sampel. Rencana awal memakai 32 kHz yang tidak sinkron dengan PWM dan menimbulkan jitter 16 µs."],
-      f: [["Frekuensi PWM", "62.5 kHz"], ["Resolusi", "8 bit"], ["Sinkronisasi", "2 periode PWM per sampel"]],
+    { t: "PWM on D3", s: "62.5 kHz, 8 bit",
+      p: ["The Uno has no DAC. Timer2 makes a 62.5 kHz PWM on pin D3, and its duty cycle is loaded with the sample value 0–255.",
+        "The Timer1 interrupt is locked to the PWM: exactly 2 PWM periods per sample. The first plan used 32 kHz, which was not in step with the PWM and caused 16 µs of jitter."],
+      f: [["PWM frequency", "62.5 kHz"], ["Resolution", "8 bit"], ["Synchronisation", "2 PWM periods per sample"]],
       code: "fmlink_uno.ino · startAudio()" },
-    { t: "Filter RC", s: "2 tingkat, −3 dB ±5 kHz",
-      p: ["Dua tahap R–C meratakan pulsa PWM jadi gelombang audio. Nada data 1200 / 1800 / 2200 Hz hanya turun 0.23 / 0.51 / 0.75 dB, sedangkan sisa PWM 62.5 kHz turun sekitar 29 dB.",
-        "Elco 10 µF memblok tegangan DC 2.5 V, supaya yang masuk ke trimpot hanya sinyal audionya."],
-      f: [["R1 = R2", "1.5 kΩ"], ["C1 = C2", "10 nF"], ["−3 dB", "±5.0 kHz"], ["Elco", "10 µF"]],
-      code: "Bagian 03 di halaman ini" },
-    { t: "Trimpot", s: "level audio = deviasi",
-      p: ["Trimpot 10 kΩ membagi tegangan audio sebelum masuk pemancar. Besar tegangan audio menentukan seberapa jauh frekuensi pembawa FM bergeser (deviasi).",
-        "Terlalu besar membuat bunyi pecah, terlalu kecil membuat sinyal tenggelam dalam desis. Kaki tengah (wiper) disambung ke TIP dan RING1 jack, sedangkan RING2 dan SLEEVE ke GND."],
-      f: [["Nilai", "10 kΩ"], ["Wiper", "→ TIP + RING1"], ["GND", "RING2 + SLEEVE"]],
-      code: "jack TRRS 3.5 mm di breadboard" },
-    { t: "Pemancar FM", s: "kit S-151, ±104 MHz",
-      p: ["Audio masuk lewat colokan 3.5 mm. Osilator transistor C828 membangkitkan pembawa di pita FM, lalu penguat C930 memperkuatnya ke antena.",
-        "Frekuensinya bergeser ikut tegangan baterai dan posisi tangan. Pada 24 Nov terukur 104.2 MHz, lalu ±30 menit kemudian 102.4 MHz."],
-      f: [["Catu", "baterai 9 V"], ["Terukur", "104.2 → 102.4 MHz"], ["Drift", "±0.93 MHz/V"]],
-      code: "Bagian 04 di halaman ini" },
-    { t: "Udara", s: "kanal FM",
-      p: ["Di udara sinyal melemah sesuai jarak dan bercampur noise. Lebar pita yang dipakai mengikuti aturan Carson.",
-        "Pemancar yang terlalu dekat juga bisa mengganggu rangkaian digital: pada jarak 10–30 cm, pembacaan I2C ke RDA5807M jadi rusak. Karena itu pemancar dijauhkan ±1 m dari Uno."],
-      f: [["Pita", "88–108 MHz"], ["Lebar pita", "2 (Δf + fm)"], ["Jarak aman ke Uno", "≥ 1 m"]],
-      code: "Bagian 05 di halaman ini" },
-    { t: "Penerima", s: "RDA5807M · radio HP",
-      p: ["Penerima mengembalikan sinyal FM jadi audio: demodulasi FM lalu de-emphasis 50 µs. RDA5807M diatur Uno lewat I2C dan melaporkan RSSI.",
-        "Modul RDA pertama ternyata rusak di bagian RF, jadi sementara ini radio FM di HP yang dipakai."],
-      f: [["Alamat I2C", "0x10, 0x11"], ["RSSI", "0–127"], ["De-emphasis", "50 µs"]],
+    { t: "RC filter", s: "2 stages, −3 dB ≈ 5 kHz",
+      p: ["Two R–C stages smooth the PWM pulses into an audio wave. The 1200 / 1800 / 2200 Hz data tones lose only 0.23 / 0.51 / 0.75 dB, while the 62.5 kHz PWM leftover drops about 29 dB.",
+        "A 10 µF capacitor blocks the 2.5 V DC level, so only the audio reaches the trimmer."],
+      f: [["R1 = R2", "1.5 kΩ"], ["C1 = C2", "10 nF"], ["−3 dB", "≈ 5.0 kHz"], ["Capacitor", "10 µF"]],
+      code: "Section 03 on this page" },
+    { t: "Trimmer", s: "audio level = deviation",
+      p: ["A 10 kΩ trimmer divides the audio voltage before the transmitter. The audio voltage sets how far the FM carrier frequency moves (the deviation).",
+        "Too much distorts the sound, too little buries the signal in hiss. The wiper goes to TIP and RING1 of the jack, RING2 and SLEEVE go to GND."],
+      f: [["Value", "10 kΩ"], ["Wiper", "→ TIP + RING1"], ["GND", "RING2 + SLEEVE"]],
+      code: "3.5 mm TRRS jack on the breadboard" },
+    { t: "FM transmitter", s: "S-151 kit, ≈ 104 MHz",
+      p: ["Audio goes in through a 3.5 mm plug. A C828 transistor oscillator makes the carrier in the FM band, and a C930 amplifier drives the antenna.",
+        "Its frequency moves with the battery voltage and with hands nearby. On 24 Nov it measured 104.2 MHz, and 102.4 MHz about 30 minutes later."],
+      f: [["Supply", "9 V battery"], ["Measured", "104.2 → 102.4 MHz"], ["Drift", "≈ 0.93 MHz/V"]],
+      code: "Section 04 on this page" },
+    { t: "Air", s: "FM channel",
+      p: ["In the air the signal weakens with distance and picks up noise. The bandwidth it takes follows Carson's rule.",
+        "A transmitter too close also disturbs digital circuits: at 10–30 cm, I2C reads from the RDA5807M came back corrupted. So the transmitter sits about 1 m from the Uno."],
+      f: [["Band", "88–108 MHz"], ["Bandwidth", "2 (Δf + fm)"], ["Safe distance to the Uno", "≥ 1 m"]],
+      code: "Section 05 on this page" },
+    { t: "Receiver", s: "RDA5807M · phone radio",
+      p: ["The receiver turns the FM signal back into audio: FM demodulation, then 50 µs de-emphasis. The Uno controls the RDA5807M over I2C and reads its RSSI.",
+        "The first RDA module had a dead RF section; the replacement picks up the transmitter at RSSI 107. Until its audio is wired to the laptop, a phone FM radio feeds the decoder."],
+      f: [["I2C address", "0x10, 0x11"], ["RSSI", "0–127"], ["De-emphasis", "50 µs"]],
       code: "fmlink_uno.ino · radioInit(), rdaTune()" },
     { t: "Decoder", s: "Python & browser",
-      p: ["Audio direkam 48 kHz. Decoder memfilter 400–3600 Hz, menghitung keputusan lunak per sampel, mencari preamble + sync di 16 offset waktu, mencoba 41 kemungkinan error clock (±1 %), lalu membaca isi dan mengecek CRC-8.",
-        "Hasil yang sama juga bisa dijalankan di halaman ini (bagian 07), langsung dari mikrofon laptop."],
-      f: [["Laju rekam", "48 kHz"], ["Pelacakan clock", "±1 %, 41 langkah"], ["Toleransi sync", "1 bit salah dari 24"]],
+      p: ["Audio is recorded at 48 kHz. The decoder filters 400–3600 Hz, makes a soft decision per sample, looks for preamble + sync at 16 time offsets, tries 41 clock errors (±1 %), then reads the payload and checks the CRC-8.",
+        "The same decoder runs on this page (section 07), straight from the laptop microphone."],
+      f: [["Recording rate", "48 kHz"], ["Clock tracking", "±1 %, 41 steps"], ["Sync tolerance", "1 wrong bit in 24"]],
       code: "python/fmlink.py · decode() · web/decoder.js" },
   ];
 
@@ -181,9 +181,9 @@
     $$("#chain button").forEach((b, k) => b.setAttribute("aria-pressed", k === i ? "true" : "false"));
     const st = STAGES[i];
     $("#chainDetail").innerHTML =
-      `<div class="panel what"><p class="eyebrow">Tahap ${i + 1} dari ${STAGES.length}</p><h3>${esc(st.t)}</h3>${st.p.map((p) => `<p>${p}</p>`).join("")}` +
+      `<div class="panel what"><p class="eyebrow">Stage ${i + 1} of ${STAGES.length}</p><h3>${esc(st.t)}</h3>${st.p.map((p) => `<p>${p}</p>`).join("")}` +
       `<p class="code-ref">${esc(st.code)}</p></div>` +
-      `<div class="panel"><h3>Angka penting</h3><dl class="kv">${st.f.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>`;
+      `<div class="panel"><h3>Key numbers</h3><dl class="kv">${st.f.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>`;
   }
   $("#chain").innerHTML = STAGES.map((st, i) =>
     `<li><button type="button" aria-pressed="false"><span class="n">${String(i + 1).padStart(2, "0")}</span><span class="t">${esc(st.t)}</span><span class="s">${esc(st.s)}</span></button></li>`).join("");
@@ -209,12 +209,12 @@
     const nbits = fr.bits.length;
     const crc = fr.bytes[fr.fields.find((f) => f.name === "crc").start];
     const stats = [
-      ["Total byte", fr.bytes.length], ["Total bit", nbits],
-      ["Durasi @ " + baud + " baud", (nbits / baud * 1000).toFixed(0) + " ms"],
-      ["Isi (len)", fr.payload.length + " byte"], ["CRC-8", "0x" + hex2(crc)],
+      ["Total bytes", fr.bytes.length], ["Total bits", nbits],
+      ["Duration @ " + baud + " baud", (nbits / baud * 1000).toFixed(0) + " ms"],
+      ["Payload (len)", fr.payload.length + " bytes"], ["CRC-8", "0x" + hex2(crc)],
     ];
     $("#frameStats").innerHTML = stats.map(([k, v]) => `<div class="stat"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join("");
-    $("#frameBitCount").textContent = nbits + " bit";
+    $("#frameBitCount").textContent = nbits + " bits";
     drawFrameBits(fr);
   }
   function drawFrameBits(fr) {
@@ -243,9 +243,9 @@
   // ---------------------------------------------------------------- modulation playground
   const mod = { scheme: "FSK", player: null };
   const MOD_NOTES = {
-    ASK: "ASK: bit 1 = nada 1800 Hz, bit 0 = diam (duty PWM 128). Bentuknya mirip kode Morse.",
-    FSK: "FSK: bit 1 = 1200 Hz (renggang), bit 0 = 2200 Hz (rapat). Fasa tetap nyambung di pergantian bit, jadi tidak ada lonjakan.",
-    DBPSK: "DBPSK: nada 1800 Hz terus. Segitiga ungu menandai bit 0, tempat fasa dibalik 180°. Bit 1 tidak mengubah fasa.",
+    ASK: "ASK: bit 1 = 1800 Hz tone, bit 0 = silence (PWM duty 128). It looks a lot like Morse code.",
+    FSK: "FSK: bit 1 = 1200 Hz (wide cycles), bit 0 = 2200 Hz (tight cycles). The phase stays continuous across bit changes, so there are no jumps.",
+    DBPSK: "DBPSK: a steady 1800 Hz tone. The purple triangles mark the 0 bits, where the phase flips by 180°. A 1 bit leaves the phase alone.",
   };
   function drawMod() {
     const sch = mod.scheme, baud = +$("#modBaud").value, i0 = +$("#modWin").value;
@@ -290,7 +290,7 @@
       }
     }
     ctx.stroke();
-    $("#modNote").textContent = MOD_NOTES[sch] + ` Ditampilkan bit ${i0}–${i0 + nb - 1} dari frame "halo PDSK" pada ${baud} baud (${(nb / baud * 1000).toFixed(0)} ms).`;
+    $("#modNote").textContent = MOD_NOTES[sch] + ` Showing bits ${i0}–${i0 + nb - 1} of the "halo PDSK" frame at ${baud} baud (${(nb / baud * 1000).toFixed(0)} ms).`;
   }
   async function playMod() {
     stopMod();
@@ -327,10 +327,10 @@
     $("#ddsFv").textContent = f + " Hz";
     const step = C.phaseStep(f), real = step * C.FS_UNO / 4294967296;
     $("#ddsKv").innerHTML = [
-      ["Langkah fasa", step.toLocaleString("en-US") + " (0x" + step.toString(16).toUpperCase() + ")"],
-      ["Frekuensi hasil", real.toFixed(3) + " Hz"],
-      ["Sampel per periode", (C.FS_UNO / real).toFixed(1)],
-      ["Fasa naik per sampel", (step / 4294967296 * 360).toFixed(2) + "°"],
+      ["Phase step", step.toLocaleString("en-US") + " (0x" + step.toString(16).toUpperCase() + ")"],
+      ["Actual frequency", real.toFixed(3) + " Hz"],
+      ["Samples per period", (C.FS_UNO / real).toFixed(1)],
+      ["Phase advance per sample", (step / 4294967296 * 360).toFixed(2) + "°"],
     ].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
     const N = 40, duty = [];
     let ph = 0;
@@ -354,7 +354,7 @@
     ctx.clearRect(0, 0, w, h);
     const lane = (h - 24) / 3;
     ctx.font = `11px ${MONO}`; ctx.textAlign = "left"; ctx.fillStyle = COL.faint;
-    const labels = ["sampel DDS (duty 0–255)", "PWM 62.5 kHz di D3", "setelah filter RC + elco"];
+    const labels = ["DDS samples (duty 0–255)", "62.5 kHz PWM on D3", "after the RC filter and the DC-blocking capacitor"];
     labels.forEach((l, i) => ctx.fillText(l, 6, 12 + i * (lane + 8)));
     // lane 1: stems
     const y1 = (v) => 16 + lane - 6 - (v / 255) * (lane - 14);
@@ -421,7 +421,7 @@
       ctx.beginPath(); ctx.moveTo(X(f), padT); ctx.lineTo(X(f), h - padB); ctx.stroke(); ctx.setLineDash([]);
     }
     ctx.textAlign = "left"; ctx.font = `10.5px ${MONO}`;
-    const legend = [[COL.ok, "filter Uno"], [COL.text, "+ de-emphasis"], [COL.faint, "de-emphasis saja"]];
+    const legend = [[COL.ok, "Uno filter"], [COL.text, "+ de-emphasis"], [COL.faint, "de-emphasis only"]];
     legend.forEach(([c, l], i) => { ctx.fillStyle = c; ctx.fillRect(padL + 8, Y(-40) - 26 + i * 13 - 32, 10, 3); ctx.fillStyle = COL.muted; ctx.fillText(l, padL + 22, Y(-40) - 22 + i * 13 - 32); });
     $("#filterTbl tbody").innerHTML = [1200, 1800, 2200, 5000, 62500].map((f) =>
       `<tr><td class="mono">${f.toLocaleString("en-US")} Hz${f === 62500 ? " (PWM)" : ""}</td><td class="num">${unoFilterDb(f).toFixed(2)} dB</td><td class="num">${f === 62500 ? "–" : (unoFilterDb(f) + deemphDb(f)).toFixed(2) + " dB"}</td></tr>`).join("");
@@ -435,18 +435,18 @@
     $("#fmDevV").textContent = dev + " kHz";
     const fmk = fm.tone / 1000;
     $("#fmKv").innerHTML = [
-      ["Nada audio fm", fm.tone + " Hz"],
-      ["Deviasi Δf", dev + " kHz"],
-      ["Indeks modulasi β = Δf / fm", (dev / fmk).toFixed(1)],
-      ["Lebar pita Carson 2(Δf + fm)", (2 * (dev + fmk)).toFixed(1) + " kHz"],
+      ["Audio tone fm", fm.tone + " Hz"],
+      ["Deviation Δf", dev + " kHz"],
+      ["Modulation index β = Δf / fm", (dev / fmk).toFixed(1)],
+      ["Carson bandwidth 2(Δf + fm)", (2 * (dev + fmk)).toFixed(1) + " kHz"],
     ].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
     const { ctx, w, h } = canvas($("#fmPlot"));
     ctx.clearRect(0, 0, w, h);
     const cycles = 2, carrier = 22, depth = Math.min(0.85, dev / 100 * 0.9);
     const yA = h * 0.2, aA = h * 0.13, yB = h * 0.66, aB = h * 0.24;
     ctx.font = `11px ${MONO}`; ctx.fillStyle = COL.faint; ctx.textAlign = "left";
-    ctx.fillText("audio dari Uno", 6, 12);
-    ctx.fillText("sinyal FM (frekuensi pembawa diperkecil supaya terlihat)", 6, h * 0.38);
+    ctx.fillText("audio from the Uno", 6, 12);
+    ctx.fillText("FM signal (carrier scaled down so the cycles are visible)", 6, h * 0.38);
     ctx.strokeStyle = COL.cyan; ctx.lineWidth = 1.6; ctx.beginPath();
     for (let px = 0; px <= w; px++) {
       const t = px / w, y = yA - Math.sin(2 * Math.PI * cycles * t) * aA;
@@ -505,7 +505,7 @@
     ctx.font = `10.5px ${MONO}`; ctx.fillStyle = COL.faint; ctx.textAlign = "center";
     ctx.fillText("−1 (bit 0)", 34, h - 5); ctx.fillText("0", w / 2, h - 5); ctx.fillText("+1 (bit 1)", w - 34, h - 5);
     if (!sim.hist) {
-      ctx.fillStyle = COL.muted; ctx.fillText("belum ada data", w / 2, h / 2);
+      ctx.fillStyle = COL.muted; ctx.fillText("no data yet", w / 2, h / 2);
       return;
     }
     let mx = 1;
@@ -527,7 +527,7 @@
     const fr = C.buildFrame("PRBS");
     const rows = [], hist = {};
     for (const s of C.SCHEMES) {
-      $("#simNote").textContent = `Mengirim lewat kanal: ${s} …`;
+      $("#simNote").textContent = `Sending through the channel: ${s} …`;
       await new Promise((r) => setTimeout(r, 30));
       const sig = C.resample(C.modulateUno(fr.bits, s, baud, 3), C.FS_UNO, SIM_FS, clk);
       let p = 0;
@@ -552,9 +552,9 @@
       `<tr><td><span class="pill s-${r.s}">${r.s}</span></td><td class="num">${r.found} / 3</td><td class="num">${r.ok}</td><td class="num">${r.errs}</td>` +
       `<td class="num">${r.ber === null ? "–" : r.ber === 0 ? "0" : r.ber.toExponential(1)}</td></tr>`).join("");
     const lost = rows.filter((r) => r.found < 3).map((r) => r.s);
-    $("#simNote").textContent = `SNR ${snr} dB (pita 400–3600 Hz), clock ${((clk - 1) * 100).toFixed(1)} %, ${baud} baud. ` +
-      (lost.length ? `Frame yang hilang (sync tidak ketemu) tidak dihitung di BER: ${lost.join(", ")}.` : "Semua frame ketemu.") +
-      " Noise acak, jadi hasil tiap percobaan sedikit berbeda.";
+    $("#simNote").textContent = `SNR ${snr} dB (400–3600 Hz band), clock ${((clk - 1) * 100).toFixed(1)} %, ${baud} baud. ` +
+      (lost.length ? `Lost frames (no sync found) are not counted in the BER: ${lost.join(", ")}.` : "All frames found.") +
+      " The noise is random, so every run comes out a little different.";
     sim.hist = hist;
     drawSimSoft();
     $("#simSoftLbl").textContent = "ASK · FSK · DBPSK";
@@ -619,14 +619,14 @@
 
   let exampleShown = true;
   function addRow(f) {
-    if (exampleShown) { $("#liveLog").innerHTML = ""; $("#logNote").textContent = "Frame terbaru di atas."; exampleShown = false; }
+    if (exampleShown) { $("#liveLog").innerHTML = ""; $("#logNote").textContent = "Newest frame on top."; exampleShown = false; }
     const tr = document.createElement("tr");
     tr.className = "fresh";
     const isText = f.type === "TEXT";
-    const content = isText ? `"${f.text}"` : `PRBS-9 · ${f.errors} bit salah dari ${f.bits}`;
+    const content = isText ? `"${f.text}"` : `PRBS-9 · ${f.errors} wrong bits of ${f.bits}`;
     const cells = [
       (f.t || 0).toFixed(2) + " s", f.scheme || "", content,
-      f.crcOk ? "OK" : "gagal", (f.quality || 0).toFixed(2), (f.clockPpm > 0 ? "+" : "") + f.clockPpm + " ppm",
+      f.crcOk ? "OK" : "failed", (f.quality || 0).toFixed(2), (f.clockPpm > 0 ? "+" : "") + f.clockPpm + " ppm",
     ];
     cells.forEach((c, i) => {
       const td = document.createElement("td");
@@ -634,10 +634,10 @@
       else if (i === 3) { const sp = document.createElement("span"); sp.className = "pill " + (f.crcOk ? "ok" : "bad"); sp.textContent = c; td.appendChild(sp); }
       else if (i === 2) {
         td.textContent = c;
-        const sent = window.FMLinkTx && window.FMLinkTx.sent;      // text the Pemancar panel put on the Uno
+        const sent = window.FMLinkTx && window.FMLinkTx.sent;      // text the Transmitter panel put on the Uno
         if (isText && f.crcOk && sent && f.text === sent) {
-          const sp = document.createElement("span"); sp.className = "pill info"; sp.textContent = "cocok";
-          sp.title = "Sama dengan teks yang dikirim dari panel Pemancar";
+          const sp = document.createElement("span"); sp.className = "pill info"; sp.textContent = "match";
+          sp.title = "Same as the text sent from the Transmitter panel";
           td.append(" ", sp);
         }
       }
@@ -699,7 +699,7 @@
     ctx.clearRect(0, 0, w, h);
     specGrid(ctx, w, h);
     ctx.fillStyle = COL.faint; ctx.font = `11px ${MONO}`; ctx.textAlign = "center";
-    ctx.fillText("menunggu sinyal", w / 2, h / 2);
+    ctx.fillText("waiting for a signal", w / 2, h / 2);
     canvas($("#liveFall"));
   }
   function specGrid(ctx, w, h) {
@@ -773,7 +773,7 @@
     showHint("");
     setPressed(kind);
     let ctx;
-    try { ctx = await getCtx(); } catch (e) { setStatus("Audio tidak bisa dijalankan di browser ini."); return; }
+    try { ctx = await getCtx(); } catch (e) { setStatus("Audio can't run in this browser."); return; }
     if (!live.workletReady && ctx.audioWorklet) {
       try {
         const url = URL.createObjectURL(new Blob([WORKLET_SRC], { type: "application/javascript" }));
@@ -786,7 +786,7 @@
     try {
       if (kind === "mic") {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw Object.assign(new Error("no getUserMedia"), { name: "NotSupportedError" });
-        setStatus("Meminta izin mikrofon …");
+        setStatus("Asking for microphone access …");
         const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
         live.stream = stream;
         node = ctx.createMediaStreamSource(stream);
@@ -794,20 +794,20 @@
         let buffer, label;
         if (kind.startsWith("rec-")) {
           const sch = kind.slice(4);
-          setStatus(`Memuat rekaman ${sch} …`);
-          const res = await fetch("audio/rekaman_" + sch.toLowerCase() + ".wav");
-          if (!res.ok) throw new Error("rekaman tidak ditemukan");
+          setStatus(`Loading the ${sch} recording …`);
+          const res = await fetch("audio/recording_" + sch.toLowerCase() + ".wav");
+          if (!res.ok) throw new Error("recording not found");
           buffer = await ctx.decodeAudioData(await res.arrayBuffer());
-          label = `rekaman ${sch} 24 Nov (radio HP → mic laptop)`;
+          label = `the ${sch} recording of 24 Nov (phone radio → laptop mic)`;
           $("#liveBaud").value = "300";
         } else if (kind === "file") {
           buffer = await ctx.decodeAudioData(fileBuf);
-          label = "file " + fileName;
+          label = "the file " + fileName;
         } else {
           const sch = $("#testScheme").value, baud = +$("#liveBaud").value;
-          const fr = C.buildFrame("TEXT", $("#testText").value || "halo");
+          const fr = C.buildFrame("TEXT", $("#testText").value || "hello");
           buffer = unoBuffer(ctx, concat([silence(0.3), C.modulateUno(fr.bits, sch, baud, 4), silence(0.6)]));
-          label = `sinyal uji ${sch} ${baud} baud, langsung ke decoder`;
+          label = `a ${sch} ${baud} baud test signal, fed straight into the decoder`;
         }
         const s = ctx.createBufferSource();
         s.buffer = buffer;
@@ -821,12 +821,12 @@
       setPressed(null);
       if (kind === "mic") {
         const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
-        const why = e.name === "NotFoundError" ? "Tidak ada mikrofon yang terdeteksi." :
-          e.name === "NotAllowedError" || e.name === "SecurityError" ? "Akses mikrofon ditolak atau diblok oleh tampilan ini." : "Mikrofon tidak tersedia di tampilan ini.";
-        showHint(`<b>${why}</b> ` + (local ? "Cek izin mikrofon di ikon gembok sebelah alamat, lalu coba lagi." :
-          "Link halaman yang dibuka dari claude.ai tidak boleh memakai mikrofon. Untuk decode real-time, buka versi lokal di laptop (lihat langkah di bawah), atau pakai rekaman, file, dan sinyal uji yang tetap jalan di sini."));
-        setStatus("Mikrofon tidak bisa dipakai.");
-      } else setStatus("Gagal memuat audio: " + e.message);
+        const why = e.name === "NotFoundError" ? "No microphone found." :
+          e.name === "NotAllowedError" || e.name === "SecurityError" ? "Microphone access was denied or blocked on this page." : "No microphone is available on this page.";
+        showHint(`<b>${why}</b> ` + (local ? "Check the microphone permission at the icon next to the address bar, then try again." :
+          "Check the microphone permission at the icon next to the address bar and try again. If this page is embedded somewhere else, open it directly at https://arsa07lol.github.io/fmlink/web/. The recordings, your own file and the test signal work without a microphone."));
+        setStatus("The microphone can't be used.");
+      } else setStatus("Could not load the audio: " + e.message);
       return;
     }
     live.kind = kind; live.src = node; live.running = true; live.ok = 0; live.bad = 0;
@@ -848,8 +848,8 @@
     if (node.start) node.start();
     $("#liveStop").disabled = false;
     $("#liveFs").textContent = (ctx.sampleRate / 1000).toFixed(1) + " kHz";
-    setStatus((kind === "mic" ? "Mendengarkan mikrofon." : "Memutar " + live.label + ".") +
-      " Frame muncul ±2 detik setelah diterima, karena decoder menunggu cukup data untuk melacak clock.", true);
+    setStatus((kind === "mic" ? "Listening to the microphone." : "Playing " + live.label + ".") +
+      " Frames show up about 2 seconds after they arrive, because the decoder waits for enough audio to track the clock.", true);
     live.timer = setInterval(runDecode, 1000);
     live.lastRow = 0;
     cancelAnimationFrame(live.raf);
@@ -858,7 +858,7 @@
 
   function liveFinish() {                      // a recording ended: decode the tail, then stop
     clearTimeout(live.ending);
-    live.ending = setTimeout(() => { runDecode(true); setTimeout(() => liveStop(false, "Selesai. Pilih sumber lain untuk mencoba lagi."), 600); }, 900);
+    live.ending = setTimeout(() => { runDecode(true); setTimeout(() => liveStop(false, "Done. Pick another source to try again."), 600); }, 900);
   }
 
   async function liveStop(silent, msg) {
@@ -877,20 +877,20 @@
     live.running = false; live.kind = null;
     $("#liveStop").disabled = true;
     setPressed(null);
-    if (!silent) setStatus(msg || "Berhenti.", false);
+    if (!silent) setStatus(msg || "Stopped.", false);
   }
 
   async function playTestAloud() {             // mic is listening: play the test signal through the speaker
     const ctx = await getCtx();
     const sch = $("#testScheme").value, baud = +$("#liveBaud").value;
-    const fr = C.buildFrame("TEXT", $("#testText").value || "halo");
+    const fr = C.buildFrame("TEXT", $("#testText").value || "hello");
     const s = ctx.createBufferSource();
     s.buffer = unoBuffer(ctx, concat([silence(0.3), C.modulateUno(fr.bits, sch, baud, 4), silence(0.3)]));
     const g = ctx.createGain(); g.gain.value = 0.6;
     s.connect(g); g.connect(ctx.destination);
     s.start();
     live.playOnly = s;
-    setStatus(`Mikrofon mendengarkan, speaker memutar sinyal uji ${sch} ${baud} baud (jalur akustik speaker → mic).`, true);
+    setStatus(`Microphone listening while the speaker plays a ${sch} ${baud} baud test signal (acoustic path, speaker → mic).`, true);
   }
 
   $$("#sources [data-src]").forEach((b) => b.addEventListener("click", () => liveStart(b.dataset.src)));
@@ -912,36 +912,36 @@
   ];
   $("#liveLog").innerHTML = EXAMPLE.map((r) =>
     `<tr class="example"><td>${r[0]}</td><td><span class="pill s-${r[1]}">${r[1]}</span></td><td>${esc(r[2])}</td>` +
-    `<td><span class="pill ${r[3] ? "ok" : "bad"}">${r[3] ? "OK" : "gagal"}</span></td><td class="num">${r[4]}</td><td class="num">${r[5]}</td></tr>`).join("");
+    `<td><span class="pill ${r[3] ? "ok" : "bad"}">${r[3] ? "OK" : "failed"}</span></td><td class="num">${r[4]}</td><td class="num">${r[5]}</td></tr>`).join("");
   drawSpecIdle();
   drawLiveSoft(null);
 
   // ---------------------------------------------------------------- journal
   const JOURNAL = [
-    { d: "5 Nov", k: "decision", t: "Proyek dimulai", b: "Rancangan awal: STM32 Blue Pill membuat audio TX, Arduino Uno mengendalikan penerima RDA5807M, laptop men-decode." },
-    { d: "21 Nov", k: "fail", t: "Upload ke STM32 lewat Uno gagal", b: "Bootloader STM32 tidak menjawab (\"Activating device: KO\") di 115200 dan 9600 baud, baik dari Arduino IDE maupun STM32CubeProgrammer. Loopback Uno normal, BOOT0 sudah 1.", f: "Tanpa ST-Link atau USB-TTL, diputuskan satu Arduino Uno mengerjakan TX dan RX sekaligus." },
-    { d: "23 Nov", k: "ok", t: "Firmware Uno ditulis ulang", b: "Interrupt sampel 31 250 Hz dikunci ke PWM 62.5 kHz (2 periode PWM per sampel). Rencana 32 kHz sebelumnya tidak sinkron dan menimbulkan jitter 16 µs. Pengaturan disimpan di EEPROM supaya tidak hilang saat port serial dibuka." },
-    { d: "23 Nov", k: "fail", t: "Bug decoder: clock Uno meleset", b: "Resonator keramik Uno bisa meleset ±0.5 %. Decoder lama memakai grid waktu tetap: clock +0.2 % sudah membuat BER 0.26, dan +0.5 % membuat BER 0.40.", f: "Decoder sekarang mencoba 41 kemungkinan error clock (±1 %) per frame. Simulasi firmware dan selftest lolos." },
-    { d: "23 Nov", k: "ok", t: "Upload ke Uno sukses", b: "Banner, perintah TX, pesan error, dan EEPROM terbukti di hardware. Scan I2C tanpa RDA tidak membuat Uno hang (timeout 25 ms)." },
-    { d: "23 Nov", k: "fail", t: "Pinout RDA dari ingatan ternyata salah", b: "Dugaan awal: pin 3 dan 9 juga GND. Lima gambar pinout dari sumber berbeda sepakat: hanya pin 6 yang GND.", f: "Prosedur cek dibatalkan sebelum dipakai, dan catatan dikoreksi. Pelajaran: jangan menyusun prosedur dari pinout yang belum dipastikan." },
-    { d: "24 Nov", k: "fail", t: "Pad modul RDA copot saat disolder", b: "Pad 7 di modul 1 dan pad 10 di modul 2 lepas sampai logamnya hilang. Timah tidak bisa menempel di papan tanpa logam.", f: "Audio dipindah ke pad 8: firmware memaksa mono, jadi isi pad 7 dan 8 sama." },
-    { d: "24 Nov", k: "ok", t: "RDA menjawab di I2C", b: "Daya pertama lewat resistor 1.5 kΩ sebagai pengaman, kabel VCC dicolok paling akhir. Scan menemukan 0x10, 0x11, dan 0x60; setelah resistor diganti kabel, radio OK di 103.9 MHz." },
-    { d: "24 Nov", k: "fail", t: "Tidak ada sinyal sama sekali", b: "SCAN 87.5–108 MHz: RSSI 2 di semua 206 kanal, walaupun antena 75 cm dan sambungannya 2.4 Ω. Register mentah (perintah REG baru) menunjukkan chip asli dan setting benar; mencoba input LNA lain tidak mengubah apa pun.", f: "Dengan pemancar 10–30 cm cuma terbaca RSSI ±10, padahal modul sehat 50+. Kesimpulan: bagian RF modul 1 rusak. Modul baru dibeli." },
-    { d: "24 Nov", k: "fail", t: "Pemancar terlalu dekat mengganggu I2C", b: "Saat pemancar menyala di dekat breadboard, pembacaan register RDA banyak yang gagal atau rusak; puncak RSSI 64 di scan ternyata data rusak.", f: "Pemancar ditaruh ±1 m dari Uno dan kabel." },
-    { d: "24 Nov", k: "fail", t: "Filter TX tidak berbunyi", b: "Nada 1000 Hz tidak terdengar di earphone, hanya kresek saat trimpot diputar.", f: "Earphone dipakai sebagai alat ukur: jumper TIP dipindah ke kaki elco satu per satu. Ketemu satu kaki resistor yang salah jalur; setelah dibetulkan, nada terdengar." },
-    { d: "24 Nov", k: "ok", t: "Pemancar di udara", b: "Kabel audio pemancar langsung masuk jack TRRS di breadboard. Nada dari Uno terdengar di radio FM HP pada 104.2 MHz." },
-    { d: "24 Nov", k: "fail", t: "Frekuensi pemancar bergeser", b: "±30 menit kemudian pemancar pindah ke 102.4 MHz. Tes decode pertama cuma merekam desis.", f: "Frekuensi dicari ulang di radio, pemancar tidak disentuh lagi selama tes." },
-    { d: "24 Nov", k: "ok", t: "Link data ujung ke ujung", b: "Teks \"halo PDSK\" dikirim Uno dengan FSK, ASK, dan DBPSK, lewat pemancar FM, radio HP, speaker, dan mikrofon laptop, lalu ter-decode dengan CRC OK: FSK 6 dari 8 frame, ASK 14 dari 17, DBPSK 12 dari 16." },
-    { d: "24 Nov", k: "ok", t: "Decoder juga jalan di browser", b: "Decoder Python diterjemahkan ke JavaScript untuk halaman ini. Pada ketiga rekaman, hasilnya sama persis dengan Python." },
-    { d: "25 Nov", k: "ok", t: "Teks diganti langsung dari halaman ini", b: "Panel Pemancar mengirim perintah ke Uno lewat kabel USB (Web Serial). Teks, skema, dan bit rate bisa diganti tanpa upload ulang dan tanpa Arduino IDE." },
-    { d: "26 Nov", k: "fail", t: "Antena pemancar lupa dipasang", b: "Modul RDA baru menyala, tapi di frekuensi pemancar kuat sinyalnya hampir sama dengan frekuensi kosong, dan nada di radio HP pelan.", f: "Setelah antena dipasang, RDA membaca RSSI 107–108 di frekuensi pemancar, sedangkan frekuensi lain 28–55." },
-    { d: "26 Nov", k: "ok", t: "Modul RDA baru menangkap pemancar", b: "Daya pertama lewat resistor pengaman: I2C menjawab di 0x10 dan 0x11, ID chip 5804, radio OK. Kuat sinyal baru stabil ±0.5 detik setelah pindah frekuensi, jadi tombol Cari pemancar di halaman ini menunggu dulu sebelum membaca." },
+    { d: "5 Nov", k: "decision", t: "Project started", b: "First design: an STM32 Blue Pill makes the TX audio, an Arduino Uno controls the RDA5807M receiver, the laptop decodes." },
+    { d: "21 Nov", k: "fail", t: "Uploading to the STM32 through the Uno failed", b: "The STM32 bootloader did not answer (\"Activating device: KO\") at 115200 or 9600 baud, from either the Arduino IDE or STM32CubeProgrammer. The Uno loopback was fine and BOOT0 was set to 1.", f: "With no ST-Link or USB-TTL adapter at hand, one Arduino Uno now handles both TX and RX." },
+    { d: "23 Nov", k: "ok", t: "Uno firmware rewritten", b: "The 31 250 Hz sample interrupt is locked to the 62.5 kHz PWM (2 PWM periods per sample). The earlier 32 kHz plan was not in step with the PWM and caused 16 µs of jitter. Settings live in EEPROM so they survive the serial port being opened." },
+    { d: "23 Nov", k: "fail", t: "Decoder bug: the Uno's clock is off", b: "The Uno's ceramic resonator can be ±0.5 % off. The old decoder used a fixed timing grid: a +0.2 % clock already gave a BER of 0.26, and +0.5 % gave 0.40.", f: "The decoder now tries 41 possible clock errors (±1 %) per frame. The firmware simulation and the selftest pass." },
+    { d: "23 Nov", k: "ok", t: "Upload to the Uno works", b: "Banner, TX commands, error messages and EEPROM proven on the hardware. An I2C scan without the RDA connected doesn't hang the Uno (25 ms timeout)." },
+    { d: "23 Nov", k: "fail", t: "The RDA pinout from memory was wrong", b: "First guess: pins 3 and 9 are GND too. Five pinout drawings from different sources agree that only pin 6 is GND.", f: "The check procedure was dropped before it was used, and the notes were corrected. Lesson: never build a procedure on a pinout that hasn't been confirmed." },
+    { d: "24 Nov", k: "fail", t: "RDA module pads lifted while soldering", b: "Pad 7 on module 1 and pad 10 on module 2 came off together with their copper. Solder won't stick to a board with no copper left.", f: "Audio moved to pad 8: the firmware forces mono, so pads 7 and 8 carry the same signal." },
+    { d: "24 Nov", k: "ok", t: "The RDA answers on I2C", b: "First power-up through a 1.5 kΩ resistor as a safeguard, with the VCC wire plugged in last. The scan found 0x10, 0x11 and 0x60; with the resistor replaced by a wire, the radio reported OK at 103.9 MHz." },
+    { d: "24 Nov", k: "fail", t: "No signal at all", b: "SCAN over 87.5–108 MHz: RSSI 2 on all 206 channels, even with a 75 cm antenna and a 2.4 Ω connection. The raw registers (a new REG command) showed a genuine chip and correct settings; switching to the other LNA input changed nothing.", f: "With the transmitter 10–30 cm away it read only about RSSI 10, where a healthy module reads 50+. Conclusion: module 1's RF section is dead, so a new module was ordered." },
+    { d: "24 Nov", k: "fail", t: "A transmitter too close disturbs I2C", b: "With the transmitter on next to the breadboard, many RDA register reads failed or came back corrupted; an RSSI peak of 64 in one scan turned out to be corrupted data.", f: "The transmitter now sits about 1 m from the Uno and its wiring." },
+    { d: "24 Nov", k: "fail", t: "The TX filter was silent", b: "The 1000 Hz tone couldn't be heard in an earphone, only crackling while turning the trimmer.", f: "Used the earphone as a probe, moving the TIP jumper to each capacitor leg in turn. One resistor leg was in the wrong row; once moved, the tone came through." },
+    { d: "24 Nov", k: "ok", t: "Transmitter on the air", b: "The transmitter's audio cable plugs straight into the TRRS jack on the breadboard. The Uno's tone came through on a phone FM radio at 104.2 MHz." },
+    { d: "24 Nov", k: "fail", t: "The transmitter frequency drifts", b: "About 30 minutes later the transmitter had moved to 102.4 MHz, so the first decode test recorded only hiss.", f: "Found the frequency again on the radio and left the transmitter untouched during the test." },
+    { d: "24 Nov", k: "ok", t: "End-to-end data link", b: "The text \"halo PDSK\" went out from the Uno with FSK, ASK and DBPSK, through the FM transmitter, a phone radio, its speaker and the laptop microphone, and decoded with CRC OK: FSK 6 of 8 frames, ASK 14 of 17, DBPSK 12 of 16." },
+    { d: "24 Nov", k: "ok", t: "The decoder runs in the browser too", b: "The Python decoder was ported to JavaScript for this page. On all three recordings the results match Python exactly." },
+    { d: "25 Nov", k: "ok", t: "Text changed straight from this page", b: "The Transmitter panel sends commands to the Uno over USB (Web Serial). Text, scheme and bit rate change without re-uploading and without the Arduino IDE." },
+    { d: "26 Nov", k: "fail", t: "Forgot the transmitter's antenna", b: "The new RDA module powered up, but at the transmitter's frequency the signal strength was barely above an empty frequency, and the tone on the phone radio was faint.", f: "With the antenna on, the RDA reads RSSI 107–108 at the transmitter's frequency and 28–55 elsewhere." },
+    { d: "26 Nov", k: "ok", t: "The new RDA module catches the transmitter", b: "First power-up through a safety resistor: I2C answers at 0x10 and 0x11, chip ID 5804, radio OK. The signal strength only settles about 0.5 s after a retune, so the Find transmitter button on this page waits before it reads." },
   ];
   function renderJournal(filter) {
-    const label = { ok: ["ok", "berhasil"], fail: ["bad", "gagal → perbaikan"], decision: ["warn", "keputusan"] };
+    const label = { ok: ["ok", "worked"], fail: ["bad", "failed → fixed"], decision: ["warn", "decision"] };
     $("#timeline").innerHTML = JOURNAL.filter((j) => filter === "all" || j.k === filter || (filter === "decision" && j.k === "decision")).map((j) =>
       `<li class="tl ${j.k}"><div class="tl-head"><span class="tl-date">${esc(j.d)}</span><h3>${esc(j.t)}</h3><span class="pill ${label[j.k][0]}">${label[j.k][1]}</span></div>` +
-      `<p>${esc(j.b)}</p>${j.f ? `<p class="fix"><b>Perbaikan:</b> ${esc(j.f)}</p>` : ""}</li>`).join("");
+      `<p>${esc(j.b)}</p>${j.f ? `<p class="fix"><b>Fix:</b> ${esc(j.f)}</p>` : ""}</li>`).join("");
   }
   seg($("#tlChips"), "f", renderJournal);
   renderJournal("all");
@@ -950,7 +950,7 @@
   const RES = [["FSK", 6, 2], ["ASK", 14, 3], ["DBPSK", 12, 4]];
   const maxTot = Math.max(...RES.map((r) => r[1] + r[2]));
   $("#resBars").innerHTML = RES.map(([s, ok, bad]) =>
-    `<div class="barrow"><span class="pill s-${s}">${s}</span><div class="track" role="img" aria-label="${s}: ${ok} OK, ${bad} gagal">` +
+    `<div class="barrow"><span class="pill s-${s}">${s}</span><div class="track" role="img" aria-label="${s}: ${ok} OK, ${bad} failed">` +
     `<i style="width:${ok / maxTot * 100}%;background:${COL[s]}"></i><i style="width:${bad / maxTot * 100}%;background:${rgba(COL.bad, 0.55)}"></i></div>` +
     `<span class="mono">${ok} / ${ok + bad}</span></div>`).join("");
 

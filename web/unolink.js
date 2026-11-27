@@ -1,4 +1,4 @@
-/* unolink.js: the "Pemancar" (transmitter) and "Penerima RDA" (receiver) panels of the live demo.
+/* unolink.js: the Transmitter and RDA receiver panels of the live demo.
    Talks to the Arduino Uno over USB with Web Serial (Chrome or Edge on a laptop; the page has to be
    served over https or from localhost). It sends the same lines you would type in the Arduino
    Serial Monitor (115200 baud, Newline):
@@ -32,8 +32,8 @@
   const COLORS = { ASK: "var(--amber)", FSK: "var(--cyan)", DBPSK: "var(--violet)" };
   // the Uno's status line, e.g.  tx    : DATA | frame TEXT "halo PDSK" | FSK | 300 baud
   const STATUS_RE = /^tx\s*:\s*(SWEEP|TONE (\d+) Hz|QUIET|DATA) \| frame (PRBS-9|TEXT "(.*)") \| (ASK|FSK|DBPSK) \| (\d+) baud$/;
-  const NO_REPLY = "Uno tidak membalas. Cek kabel USB, lalu klik Putuskan dan Hubungkan Uno lagi.";
-  const NO_RADIO = "Uno tidak menemukan RDA. Cek kabel SDA, SCL, VCC, dan GND RDA, lalu klik Cek status di panel Pemancar.";
+  const NO_REPLY = "The Uno did not reply. Check the USB cable, then click Disconnect and Connect Uno again.";
+  const NO_RADIO = "The Uno can't find the RDA. Check the RDA's SDA, SCL, VCC and GND wires, then click Check status in the Transmitter panel.";
   const tx = (window.FMLinkTx = window.FMLinkTx || { sent: null });
   const st = { state: "off", port: null, reader: null, loop: null, buf: "", waiters: [], busy: false, closing: false };
   const rda = { ok: null, freq: null, live: false, hist: [], collect: null };
@@ -56,10 +56,10 @@
   function setState(state) {
     st.state = state;
     const [label, cls] = {
-      off: ["belum terhubung", "idle"],
-      wait: ["menghubungkan…", "warn"],
-      on: ["terhubung ke Uno", "ok"],
-      none: ["perlu Chrome/Edge di laptop", "bad"],
+      off: ["not connected", "idle"],
+      wait: ["connecting…", "warn"],
+      on: ["connected to Uno", "ok"],
+      none: ["needs Chrome or Edge on a laptop", "bad"],
     }[state];
     ui.conn.textContent = label;
     ui.conn.className = "pill " + cls;
@@ -91,7 +91,7 @@
 
   function show(s) {
     if (s.mode) ui.mode.textContent = s.mode;
-    if (s.text !== undefined) ui.now.textContent = s.text === null ? "PRBS-9 (uji BER)" : `"${s.text}"`;
+    if (s.text !== undefined) ui.now.textContent = s.text === null ? "PRBS-9 (BER test)" : `"${s.text}"`;
     if (s.scheme) { ui.schemeNow.textContent = s.scheme; ui.schemeNow.style.color = COLORS[s.scheme]; }
     if (s.baud) ui.baudNow.textContent = s.baud + " baud";
   }
@@ -115,16 +115,16 @@
   function rdaSetLive(on) {
     rda.live = on;
     if (!hasRx) return;
-    rx.live.textContent = on ? "Live: nyala" : "Live: mati";
+    rx.live.textContent = on ? "Live: on" : "Live: off";
     rx.live.setAttribute("aria-pressed", on ? "true" : "false");
-    rx.sparkLbl.textContent = on ? "diperbarui 10× per detik" : "Live mati";
+    rx.sparkLbl.textContent = on ? "updated 10× a second" : "Live off";
   }
 
   function rdaShow(s) {
     if (!hasRx) return;
     if (s.ok !== undefined) {
       rda.ok = s.ok;
-      rx.conn.textContent = s.ok ? "radio OK" : "radio tidak ditemukan";
+      rx.conn.textContent = s.ok ? "radio OK" : "radio not found";
       rx.conn.className = "pill " + (s.ok ? "ok" : "bad");
       refresh();
     }
@@ -144,7 +144,7 @@
     rda.ok = null; rda.freq = null; rda.collect = null;
     rdaSetLive(false);
     if (!hasRx) return;
-    rx.conn.textContent = "belum terhubung";
+    rx.conn.textContent = "not connected";
     rx.conn.className = "pill idle";
     rx.freq.textContent = "–"; rx.rssi.textContent = "–"; rx.vol.textContent = "–";
     rx.bar.style.width = "0";
@@ -224,7 +224,7 @@
     let m = STATUS_RE.exec(line);
     if (m) {
       const s = {
-        mode: m[1] === "DATA" ? "data" : m[1] === "QUIET" ? "diam" : m[1] === "SWEEP" ? "sweep" : `nada ${m[2]} Hz`,
+        mode: m[1] === "DATA" ? "data" : m[1] === "QUIET" ? "quiet" : m[1] === "SWEEP" ? "sweep" : `tone ${m[2]} Hz`,
         text: m[3] === "PRBS-9" ? null : m[4],
         scheme: m[5],
         baud: +m[6],
@@ -243,9 +243,9 @@
     else if (line.startsWith("sending PRBS-9")) show({ mode: "data", text: null });
     else if ((m = /scheme -> (ASK|FSK|DBPSK)/.exec(line))) show({ scheme: m[1] });
     else if ((m = /^baud -> (\d+)/.exec(line))) show({ baud: +m[1] });
-    else if ((m = /^tone (\d+) Hz$/.exec(line))) show({ mode: `nada ${m[1]} Hz` });
+    else if ((m = /^tone (\d+) Hz$/.exec(line))) show({ mode: `tone ${m[1]} Hz` });
     else if (line === "data mode") show({ mode: "data" });
-    else if (line === "quiet") show({ mode: "diam" });
+    else if (line === "quiet") show({ mode: "quiet" });
     return null;
   }
 
@@ -342,8 +342,8 @@
     try {
       port = await navigator.serial.requestPort();       // Chrome shows its own port list
     } catch (e) {
-      if (e && e.name === "NotFoundError") hint("Belum ada port yang dipilih. Klik Hubungkan Uno lagi, lalu pilih port Arduino (biasanya COM3).");
-      else hint("Akses USB diblok di halaman ini. Buka https://arsa07lol.github.io/fmlink/web/ langsung di Chrome atau Edge.");
+      if (e && e.name === "NotFoundError") hint("No port was selected. Click Connect Uno again and pick the Arduino port (usually COM3).");
+      else hint("USB access is blocked on this page. Open https://arsa07lol.github.io/fmlink/web/ directly in Chrome or Edge.");
       return;
     }
     setState("wait");
@@ -351,7 +351,7 @@
       await port.open({ baudRate: 115200 });
     } catch (e) {
       setState("off");
-      hint("Port tidak bisa dibuka. Tutup Serial Monitor Arduino IDE atau program lain yang sedang memakai port ini, lalu coba lagi.");
+      hint("The port could not be opened. Close the Arduino IDE Serial Monitor or any other program using this port, then try again.");
       return;
     }
     try { await port.setSignals({ dataTerminalReady: false, requestToSend: false }); } catch (e) { /* not every driver has it */ }
@@ -366,13 +366,13 @@
     if (st.port !== port) return;                        // unplugged or disconnected meanwhile
     if (!line) {
       await disconnect();
-      hint("Port terbuka, tapi Uno tidak menjawab. Pastikan port yang dipilih adalah Arduino Uno dan firmware FM Link sudah ter-upload.");
+      hint("The port opened, but the Uno did not answer. Make sure you picked the Arduino Uno and that the FM Link firmware is uploaded.");
       return;
     }
     const s = parse(line);
     fill(s);
     setState("on");
-    hint(`Terhubung. Uno sedang memancarkan ${s.text === null ? "frame PRBS-9" : `"${s.text}"`} dengan ${s.scheme} ${s.baud} baud. Decoder di bawah ikut di-set ke ${s.baud} baud.`, true);
+    hint(`Connected. The Uno is transmitting ${s.text === null ? "PRBS-9 frames" : `"${s.text}"`} with ${s.scheme} at ${s.baud} baud. The decoder below is set to ${s.baud} baud too.`, true);
     // the "radio :" status line arrives right after; then start the live signal strength
     if (hasRx) setTimeout(() => { if (st.port === port && rda.ok && !rda.live && !st.busy) toggleLive(true); }, 400);
   }
@@ -401,20 +401,20 @@
     port.close().catch(() => {});
     setState("off");
     rdaReset();
-    hint("Sambungan USB ke Uno putus (kabel tercabut?). Colok lagi, lalu klik Hubungkan Uno.");
+    hint("The USB link to the Uno dropped (cable pulled out?). Plug it back in, then click Connect Uno.");
   }
 
   function unsupported() {
     setState("none");
-    hint("Browser ini belum bisa mengakses USB (Web Serial). Buka halaman ini di Chrome atau Edge di laptop. Tanpa itu, teks tetap bisa diganti lewat Serial Monitor Arduino IDE (115200 baud, Newline): ketik M <teks>.");
+    hint("This browser can't reach USB devices (Web Serial). Open this page in Chrome or Edge on a laptop. Without it, the text can still be changed from the Arduino IDE Serial Monitor (115200 baud, Newline): type M <text>.");
   }
 
   // ------------------------------------------------------------ transmitter buttons
   async function send() {
     const text = ui.text.value.trim();
-    if (!text) { hint("Teksnya masih kosong."); return; }
+    if (!text) { hint("The text is empty."); return; }
     if (/[^\x20-\x7e]/.test(text)) {
-      hint("Pakai huruf, angka, spasi, dan tanda baca biasa saja (ASCII). Huruf seperti é atau emoji tidak bisa dikirim.");
+      hint("Use plain letters, digits, spaces and punctuation (ASCII). Characters like é or emoji can't be sent.");
       return;
     }
     const s = +ui.scheme.value, b = +ui.baud.value;
@@ -427,7 +427,7 @@
       if (!ok) { hint(NO_REPLY); return; }
       tx.sent = text;
       syncDecoder(b);
-      hint(`Terkirim. Uno sekarang memancarkan "${text}" dengan ${SCHEMES[s]} ${b} baud, berulang-ulang. Decoder di bawah sudah di-set ke ${b} baud; tekan Mikrofon, dan frame yang isinya sama ditandai "cocok".`, true);
+      hint(`Sent. The Uno now transmits "${text}" with ${SCHEMES[s]} at ${b} baud, over and over. The decoder below is set to ${b} baud; press Microphone, and frames with the same text are marked "match".`, true);
     } finally {
       st.busy = false; refresh();
     }
@@ -460,14 +460,14 @@
 
   async function tune() {
     const mhz = parseFloat(rx.freqIn.value);
-    if (!(mhz >= 87.5 && mhz <= 108)) { rxHint("Frekuensi harus antara 87.5 dan 108 MHz."); return; }
+    if (!(mhz >= 87.5 && mhz <= 108)) { rxHint("The frequency must be between 87.5 and 108 MHz."); return; }
     st.busy = true; refresh(); rxHint("");
     try {
       const line = await command("F" + Math.round(mhz * 10) * 10,
         (l) => l.startsWith("tuned ") || l.startsWith("radio NOT FOUND") || l.startsWith("use F"), 2000);
       if (!line) rxHint(NO_REPLY);
-      else if (!line.startsWith("tuned ")) rxHint(line.startsWith("use F") ? "Frekuensi harus antara 87.5 dan 108 MHz." : NO_RADIO);
-      else rxHint(`RDA disetel ke ${line.match(/tuned (\d+\.\d+)/)[1]} MHz. Kuat sinyal baru stabil setelah ±0.5 detik.`, true);
+      else if (!line.startsWith("tuned ")) rxHint(line.startsWith("use F") ? "The frequency must be between 87.5 and 108 MHz." : NO_RADIO);
+      else rxHint(`RDA tuned to ${line.match(/tuned (\d+\.\d+)/)[1]} MHz. The signal strength settles after about 0.5 s.`, true);
     } finally {
       st.busy = false; refresh();
     }
@@ -488,7 +488,7 @@
       if (!rda.live && !(await setLive(true))) return;
       for (let i = 0; i < steps.length; i++) {
         const f = steps[i];
-        rxHint(`Mencari pemancar… ${f.toFixed(1)} MHz (${i + 1}/${steps.length})`);
+        rxHint(`Searching for the transmitter… ${f.toFixed(1)} MHz (${i + 1}/${steps.length})`);
         const line = await command("F" + Math.round(f * 100), (l) => l.startsWith("tuned ") || l.startsWith("radio NOT FOUND"), 2000);
         if (!line) { rxHint(NO_REPLY); return; }
         if (!line.startsWith("tuned ")) { rxHint(NO_RADIO); return; }
@@ -501,7 +501,7 @@
       }
       let bi = -1;
       res.forEach((r, i) => { if (r.v !== null && (bi < 0 || r.v > res[bi].v)) bi = i; });
-      if (bi < 0) { rxHint("Kuat sinyal tidak terbaca sama sekali. Klik Live dulu, lalu coba lagi."); return; }
+      if (bi < 0) { rxHint("No signal strength readings came in. Turn Live on, then try again."); return; }
       // a strong carrier fills 2-3 neighbouring channels with nearly the same RSSI: take the middle one
       const near = (i) => i >= 0 && i < res.length && res[i].v !== null && res[i].v >= res[bi].v - 3;
       let a = bi, z = bi;
@@ -513,11 +513,11 @@
       const rest = res.filter((r) => r.v !== null && Math.abs(r.f - best.f) > 0.25).map((r) => r.v);
       const base = rest.length ? median(rest) : null;
       drawSweep(res, steps, bi);
-      rx.sweepLbl.textContent = `puncak ${best.f.toFixed(1)} MHz`;
+      rx.sweepLbl.textContent = `peak ${best.f.toFixed(1)} MHz`;
       if (base !== null && best.v - base >= 20) {
-        rxHint(`Pemancar ketemu di ${best.f.toFixed(1)} MHz: kuat sinyal ${best.v}, frekuensi lain sekitar ${base}. RDA sudah disetel ke sana.`, true);
+        rxHint(`Transmitter found at ${best.f.toFixed(1)} MHz: signal strength ${best.v}, other frequencies around ${base}. The RDA is now tuned there.`, true);
       } else {
-        rxHint(`Paling kuat di ${best.f.toFixed(1)} MHz (${best.v}), tapi tidak jauh beda dari frekuensi lain (${base}). Pemancar mungkin mati, antenanya lepas, atau frekuensinya di luar ±1.5 MHz dari ${(center / 10).toFixed(1)} MHz. RDA tetap disetel ke ${best.f.toFixed(1)} MHz.`);
+        rxHint(`Strongest at ${best.f.toFixed(1)} MHz (${best.v}), but not far above the other frequencies (${base}). The transmitter may be off, its antenna loose, or its frequency more than 1.5 MHz from ${(center / 10).toFixed(1)} MHz. The RDA stays tuned to ${best.f.toFixed(1)} MHz.`);
       }
     } finally {
       rda.collect = null;
@@ -532,8 +532,8 @@
   ui.disconnect.addEventListener("click", () => { hint(""); rxHint(""); disconnect(); });
   ui.send.addEventListener("click", send);
   ui.tone.addEventListener("click", () => simple("T1000", (l) => /^tone \d+ Hz$/.test(l),
-    "Uno mengirim nada 1000 Hz terus-menerus. Cari bunyi \"tiiit\" di radio FM, lalu klik Kembali ke data."));
-  ui.data.addEventListener("click", () => simple("D", (l) => l === "data mode", "Uno kembali memancarkan frame data."));
+    "The Uno sends a steady 1000 Hz tone. Find the beep on an FM radio, then click Back to data."));
+  ui.data.addEventListener("click", () => simple("D", (l) => l === "data mode", "The Uno is transmitting data frames again."));
   ui.status.addEventListener("click", () => simple("?", (l) => STATUS_RE.test(l), ""));
   if (hasRx) {
     rx.live.addEventListener("click", () => toggleLive(!rda.live));
